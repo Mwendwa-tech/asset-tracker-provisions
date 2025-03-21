@@ -30,6 +30,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AssetForm } from '@/components/forms/AssetForm';
+import { CheckoutForm } from '@/components/forms/CheckoutForm';
+import { CheckinForm } from '@/components/forms/CheckinForm';
+import { toast } from '@/components/ui/use-toast';
 
 const Assets = () => {
   const { 
@@ -45,10 +49,65 @@ const Assets = () => {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  const [dialogMode, setDialogMode] = useState<'view' | 'edit' | 'add' | 'checkout' | 'checkin'>('view');
 
   const handleRowClick = (asset: Asset) => {
     setSelectedAsset(asset);
+    setDialogMode('view');
     setDialogOpen(true);
+  };
+
+  const handleAddAsset = () => {
+    setSelectedAsset(null);
+    setDialogMode('add');
+    setDialogOpen(true);
+  };
+
+  const handleEditAsset = (asset: Asset) => {
+    setSelectedAsset(asset);
+    setDialogMode('edit');
+    setDialogOpen(true);
+  };
+
+  const handleDeleteAsset = (asset: Asset) => {
+    if (window.confirm(`Are you sure you want to delete ${asset.name}?`)) {
+      deleteAsset(asset.id);
+    }
+  };
+
+  const handleCheckout = (asset: Asset) => {
+    setSelectedAsset(asset);
+    setDialogMode('checkout');
+    setDialogOpen(true);
+  };
+
+  const handleCheckin = (asset: Asset) => {
+    setSelectedAsset(asset);
+    setDialogMode('checkin');
+    setDialogOpen(true);
+  };
+
+  const handleAssetFormSubmit = (data: Omit<Asset, 'id'>) => {
+    if (selectedAsset) {
+      updateAsset(selectedAsset.id, data);
+    } else {
+      addAsset(data);
+    }
+    setDialogOpen(false);
+  };
+
+  const handleCheckoutSubmit = (data: { assignedTo: string; expectedReturnDate?: Date; notes?: string }) => {
+    if (selectedAsset) {
+      checkOutAsset(selectedAsset.id, data.assignedTo, data.expectedReturnDate, data.notes);
+      setDialogOpen(false);
+    }
+  };
+
+  const handleCheckinSubmit = (data: { notes?: string }) => {
+    if (selectedAsset) {
+      checkInAsset(selectedAsset.id, data.notes);
+      setDialogOpen(false);
+    }
   };
 
   const assetColumns = [
@@ -99,21 +158,45 @@ const Assets = () => {
   const rowActions = [
     {
       label: "Edit",
-      onClick: (item: Asset) => {
-        console.log("Edit:", item);
-        // You would implement edit functionality here
-      },
+      onClick: handleEditAsset,
       icon: <Edit className="h-4 w-4" />,
     },
     {
       label: "Delete",
-      onClick: (item: Asset) => {
-        console.log("Delete:", item);
-        // You would implement delete functionality here
-      },
+      onClick: handleDeleteAsset,
       icon: <Trash className="h-4 w-4" />,
     },
   ];
+
+  const getDialogTitle = () => {
+    switch (dialogMode) {
+      case 'add':
+        return 'Add New Asset';
+      case 'edit':
+        return 'Edit Asset';
+      case 'checkout':
+        return 'Check Out Asset';
+      case 'checkin':
+        return 'Check In Asset';
+      default:
+        return selectedAsset?.name || 'Asset Details';
+    }
+  };
+
+  const getDialogDescription = () => {
+    switch (dialogMode) {
+      case 'add':
+        return 'Enter details for the new asset';
+      case 'edit':
+        return 'Update asset information';
+      case 'checkout':
+        return 'Assign this asset to a person';
+      case 'checkin':
+        return 'Return this asset to inventory';
+      default:
+        return selectedAsset ? `${selectedAsset.category} • ${selectedAsset.location}` : '';
+    }
+  };
 
   return (
     <MainLayout>
@@ -122,7 +205,7 @@ const Assets = () => {
           title="Asset Management"
           description="Track and manage all your assets"
           actions={
-            <Button>
+            <Button onClick={handleAddAsset}>
               <Plus className="mr-2 h-4 w-4" /> Add Asset
             </Button>
           }
@@ -230,15 +313,15 @@ const Assets = () => {
 
       {/* Asset Detail Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className={dialogMode === 'view' ? "sm:max-w-md" : "sm:max-w-lg"}>
           <DialogHeader>
-            <DialogTitle>{selectedAsset?.name}</DialogTitle>
+            <DialogTitle>{getDialogTitle()}</DialogTitle>
             <DialogDescription>
-              {selectedAsset?.category} • {selectedAsset?.location}
+              {getDialogDescription()}
             </DialogDescription>
           </DialogHeader>
           
-          {selectedAsset && (
+          {dialogMode === 'view' && selectedAsset && (
             <div className="space-y-4">
               <div className="flex justify-between">
                 <div>
@@ -301,29 +384,56 @@ const Assets = () => {
               )}
               
               <div className="flex justify-end space-x-2">
-                <Button variant="outline">
+                <Button variant="outline" onClick={() => handleEditAsset(selectedAsset)}>
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
                 </Button>
                 
                 {selectedAsset.status === 'available' ? (
-                  <Button>
+                  <Button onClick={() => handleCheckout(selectedAsset)}>
                     <CheckCircle className="mr-2 h-4 w-4" />
                     Check Out
                   </Button>
                 ) : selectedAsset.status === 'checked-out' ? (
-                  <Button>
+                  <Button onClick={() => handleCheckin(selectedAsset)}>
                     <CheckCircle className="mr-2 h-4 w-4" />
                     Check In
                   </Button>
                 ) : selectedAsset.status === 'maintenance' ? (
-                  <Button>
+                  <Button onClick={() => updateAsset(selectedAsset.id, { status: 'available' })}>
                     <AlertCircle className="mr-2 h-4 w-4" />
                     Mark as Available
                   </Button>
                 ) : null}
               </div>
             </div>
+          )}
+          
+          {(dialogMode === 'add' || dialogMode === 'edit') && (
+            <AssetForm 
+              asset={dialogMode === 'edit' ? selectedAsset || undefined : undefined}
+              onSubmit={handleAssetFormSubmit}
+              onCancel={() => setDialogOpen(false)}
+              loading={loading}
+            />
+          )}
+          
+          {dialogMode === 'checkout' && selectedAsset && (
+            <CheckoutForm 
+              asset={selectedAsset}
+              onSubmit={handleCheckoutSubmit}
+              onCancel={() => setDialogOpen(false)}
+              loading={loading}
+            />
+          )}
+          
+          {dialogMode === 'checkin' && selectedAsset && (
+            <CheckinForm 
+              asset={selectedAsset}
+              onSubmit={handleCheckinSubmit}
+              onCancel={() => setDialogOpen(false)}
+              loading={loading}
+            />
           )}
         </DialogContent>
       </Dialog>
