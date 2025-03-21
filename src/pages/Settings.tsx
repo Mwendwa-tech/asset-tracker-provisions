@@ -10,8 +10,15 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { toast } from '@/components/ui/use-toast';
+import { useTheme } from '@/components/theme-provider';
+import { useState } from 'react';
+import { DatePicker } from '@/components/ui/date-picker';
 
 const Settings = () => {
+  const { setTheme } = useTheme();
+  const [dateFormat, setDateFormat] = useState("MM/DD/YYYY");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  
   const handleSave = () => {
     toast({
       title: "Settings saved",
@@ -181,18 +188,70 @@ const Settings = () => {
                   <div className="grid gap-2">
                     <Label>Theme</Label>
                     <div className="flex gap-2">
-                      <Button variant="outline" className="flex-1">Light</Button>
-                      <Button variant="outline" className="flex-1">Dark</Button>
-                      <Button variant="outline" className="flex-1">System</Button>
+                      <Button 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={() => setTheme("light")}
+                      >
+                        Light
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={() => setTheme("dark")}
+                      >
+                        Dark
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={() => setTheme("system")}
+                      >
+                        System
+                      </Button>
                     </div>
                   </div>
                   <div className="grid gap-2">
                     <Label>Date Format</Label>
                     <div className="flex gap-2">
-                      <Button variant="outline" className="flex-1">DD/MM/YYYY</Button>
-                      <Button variant="outline" className="flex-1">MM/DD/YYYY</Button>
-                      <Button variant="outline" className="flex-1">YYYY-MM-DD</Button>
+                      <Button 
+                        variant={dateFormat === "DD/MM/YYYY" ? "default" : "outline"} 
+                        className="flex-1"
+                        onClick={() => setDateFormat("DD/MM/YYYY")}
+                      >
+                        DD/MM/YYYY
+                      </Button>
+                      <Button 
+                        variant={dateFormat === "MM/DD/YYYY" ? "default" : "outline"} 
+                        className="flex-1"
+                        onClick={() => setDateFormat("MM/DD/YYYY")}
+                      >
+                        MM/DD/YYYY
+                      </Button>
+                      <Button 
+                        variant={dateFormat === "YYYY-MM-DD" ? "default" : "outline"} 
+                        className="flex-1"
+                        onClick={() => setDateFormat("YYYY-MM-DD")}
+                      >
+                        YYYY-MM-DD
+                      </Button>
                     </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Date Format Preview</Label>
+                    <DatePicker 
+                      selectedDate={selectedDate}
+                      onSelect={setSelectedDate}
+                    />
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {selectedDate && new Intl.DateTimeFormat('en-US', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        ...(dateFormat === "DD/MM/YYYY" && { dateStyle: 'short' }),
+                        ...(dateFormat === "YYYY-MM-DD" && { dateStyle: 'medium' })
+                      }).format(selectedDate)}
+                    </p>
                   </div>
                 </div>
               </CardContent>
