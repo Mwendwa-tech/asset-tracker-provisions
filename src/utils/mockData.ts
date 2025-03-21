@@ -1,5 +1,9 @@
-
 import { Asset, InventoryItem, User, Supplier, StockTransaction, CheckoutHistory } from '@/types';
+import { 
+  InventorySummary, 
+  AssetSummary, 
+  LowStockAlert 
+} from '@/types';
 
 // Helper to get random date in the last 30-60 days
 const getRecentDate = (daysAgo = 30) => {
@@ -392,13 +396,10 @@ export const getInventorySummary = (): InventorySummary => {
   let lowStockItems = 0;
 
   mockInventoryItems.forEach(item => {
-    // Count categories
     categories[item.category] = (categories[item.category] || 0) + 1;
     
-    // Sum values
     totalValue += item.currentValue;
     
-    // Count low stock items
     if (item.quantity <= item.minStockLevel) {
       lowStockItems++;
     }
@@ -420,15 +421,12 @@ export const getAssetSummary = (): AssetSummary => {
   let totalValue = 0;
 
   mockAssets.forEach(asset => {
-    // Count categories
     categories[asset.category] = (categories[asset.category] || 0) + 1;
     
-    // Count by status
     if (asset.status === 'available') available++;
     if (asset.status === 'checked-out') checkedOut++;
     if (asset.status === 'maintenance') maintenance++;
     
-    // Sum values
     totalValue += asset.currentValue;
   });
 
