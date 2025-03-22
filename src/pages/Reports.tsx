@@ -15,7 +15,6 @@ import {
   TrendingUp,
   CheckCircle
 } from 'lucide-react';
-import { ChartContainer } from '@/components/ui/chart';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useInventory } from '@/hooks/useInventory';
@@ -33,8 +32,8 @@ import {
 
 const Reports = () => {
   const { toast } = useToast();
-  const { items } = useInventory();
-  const { assets } = useAssets();
+  const { items = [] } = useInventory();
+  const { assets = [] } = useAssets();
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
@@ -71,14 +70,14 @@ const Reports = () => {
     },
     {
       id: 'asset-utilization',
-      title: 'Asset Usage',
+      title: 'Asset Utilization',
       description: 'How frequently assets are used',
       icon: <TrendingUp className="h-8 w-8 text-indigo-500" />,
       actions: ['Generate', 'Schedule'],
     },
     {
       id: 'expiry-tracking',
-      title: 'Expiry Report',
+      title: 'Expiring Items Report',
       description: 'Items approaching expiration',
       icon: <Calendar className="h-8 w-8 text-red-500" />,
       actions: ['Generate', 'Schedule'],
@@ -115,8 +114,8 @@ const Reports = () => {
       setIsGenerating(false);
       setShowReportDialog(true);
       toast({
-        title: "Report Generated",
-        description: `${reportTitle} has been generated successfully`,
+        title: "Report Generated Successfully",
+        description: `${reportTitle} has been generated and is ready to view`,
         variant: "default",
       });
     }, 1000);
@@ -125,7 +124,7 @@ const Reports = () => {
   const handleScheduleReport = (reportId: string) => {
     toast({
       title: "Report Scheduled",
-      description: "The report will be generated automatically on a weekly basis",
+      description: "This report will be automatically generated every Monday at 9:00 AM",
       variant: "default",
     });
   };
@@ -133,7 +132,7 @@ const Reports = () => {
   const handleDownloadReport = (reportType: string) => {
     toast({
       title: "Report Downloaded",
-      description: "Your report has been downloaded successfully",
+      description: "Your report has been downloaded as a PDF file",
       variant: "default",
     });
   };
@@ -144,37 +143,37 @@ const Reports = () => {
       case 'inventory-status':
         return {
           title: "Inventory Status",
-          description: "Current quantities of items in stock",
+          description: "Current inventory quantities by item",
           valueLabel: "Quantity in stock"
         };
       case 'low-stock':
         return {
           title: "Low Stock Items",
-          description: "Items below recommended stock levels",
+          description: "Items that need to be restocked soon",
           valueLabel: "Current quantity"
         };
       case 'asset-status':
         return {
           title: "Asset Availability",
-          description: "Current status of assets",
-          valueLabel: "Status (1=Available, 0=Unavailable)"
+          description: "Status of company assets",
+          valueLabel: "Available (1) / Unavailable (0)"
         };
       case 'consumption-trends':
         return {
-          title: "Usage Trends",
-          description: "Quantity of items used recently",
-          valueLabel: "Units used"
+          title: "Inventory Usage",
+          description: "How quickly items are being used",
+          valueLabel: "Units used recently"
         };
       case 'asset-utilization':
         return {
           title: "Asset Usage Rate",
-          description: "How frequently assets are being used",
+          description: "Percentage of time assets are in use",
           valueLabel: "Usage percentage"
         };
       case 'expiry-tracking':
         return {
           title: "Expiring Items",
-          description: "Items approaching expiration date",
+          description: "Items that will expire soon",
           valueLabel: "Days until expiry"
         };
       default:
@@ -195,49 +194,52 @@ const Reports = () => {
     
     switch(reportType) {
       case 'inventory-status':
-        return items.slice(0, 5).map(item => ({
+        return items.slice(0, 10).map(item => ({
           name: item.name,
           value: item.quantity,
-          detail: `${item.category}`
+          detail: `${item.category} (${item.unit})`
         }));
       case 'low-stock':
         return items
-          .filter(item => item.quantity < 10)
-          .slice(0, 5)
+          .filter(item => item.quantity < (item.minStockLevel || 10))
+          .slice(0, 10)
           .map(item => ({
             name: item.name,
             value: item.quantity,
-            detail: `Min: ${item.minStockLevel}`
+            detail: `Min required: ${item.minStockLevel || 10} ${item.unit}`
           }));
       case 'asset-status':
-        return assets.slice(0, 5).map(asset => ({
+        return assets.slice(0, 10).map(asset => ({
           name: asset.name,
           value: asset.status === 'available' ? 1 : 0,
-          detail: asset.status
+          detail: asset.status === 'available' ? 'Available' : 'Unavailable'
         }));
       case 'consumption-trends':
-        return items.slice(0, 5).map(item => ({
+        return items.slice(0, 10).map(item => ({
           name: item.name,
-          value: Math.floor(Math.random() * 50) + 10,
-          detail: `${item.unit}`
+          value: Math.floor(Math.random() * 50) + 5,
+          detail: `${item.unit} used this month`
         }));
       case 'asset-utilization':
-        return assets.slice(0, 5).map(asset => ({
+        return assets.slice(0, 10).map(asset => ({
           name: asset.name,
           value: Math.floor(Math.random() * 80) + 20,
-          detail: `${asset.category}`
+          detail: `${asset.category} - ${asset.location}`
         }));
       case 'expiry-tracking':
         return items
           .filter(item => item.expiryDate)
-          .slice(0, 5)
-          .map(item => ({
-            name: item.name,
-            value: item.expiryDate ? 
+          .slice(0, 10)
+          .map(item => {
+            const daysUntil = item.expiryDate ? 
               Math.floor((new Date(item.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 
-              0,
-            detail: item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : 'N/A'
-          }));
+              0;
+            return {
+              name: item.name,
+              value: daysUntil,
+              detail: daysUntil <= 0 ? 'EXPIRED' : `Expires in ${daysUntil} days`
+            };
+          });
       default:
         return [];
     }
@@ -254,6 +256,53 @@ const Reports = () => {
       case 'expiry-tracking': return "#ef4444"; // red
       default: return "#3b82f6"; // blue
     }
+  };
+
+  // Custom tooltip for better readability
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border rounded shadow-md">
+          <p className="font-medium">{label}</p>
+          <p className="text-sm">
+            {getReportContext(currentReportType).valueLabel}: <span className="font-medium">{payload[0].value}</span>
+          </p>
+          <p className="text-xs text-gray-500">{payload[0].payload.detail}</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Value formatter for charts
+  const formatYAxisTick = (value: number) => {
+    // Special formatting for days
+    if (currentReportType === 'expiry-tracking') {
+      return value === 0 ? '0' : `${value}d`;
+    }
+    // Special formatting for binary values (available/unavailable)
+    if (currentReportType === 'asset-status') {
+      return value === 1 ? 'Yes' : 'No'; 
+    }
+    // Special formatting for percentages
+    if (currentReportType === 'asset-utilization') {
+      return `${value}%`;
+    }
+    return value.toString();
+  };
+
+  // Color function for table cells based on data
+  const getCellColor = (reportType: string, value: number) => {
+    if (reportType === 'low-stock') {
+      return value <= 5 ? 'text-red-600 font-medium' : 'text-amber-600';
+    }
+    if (reportType === 'expiry-tracking') {
+      if (value <= 0) return 'text-red-600 font-medium';
+      if (value <= 7) return 'text-amber-600 font-medium';
+      if (value <= 14) return 'text-amber-500';
+      return 'text-green-600';
+    }
+    return '';
   };
 
   return (
@@ -355,8 +404,8 @@ const Reports = () => {
           <div className="mt-4">
             <Tabs defaultValue="chart">
               <TabsList className="mb-4">
-                <TabsTrigger value="chart">Chart</TabsTrigger>
-                <TabsTrigger value="table">Table</TabsTrigger>
+                <TabsTrigger value="chart">Chart View</TabsTrigger>
+                <TabsTrigger value="table">Table View</TabsTrigger>
               </TabsList>
               
               <TabsContent value="chart" className="h-80">
@@ -364,19 +413,27 @@ const Reports = () => {
                   <BarChart data={getReportData(currentReportType)}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
-                    <YAxis label={{ value: getReportContext(currentReportType).valueLabel, angle: -90, position: 'insideLeft' }} />
-                    <Tooltip formatter={(value) => [`${value}`, getReportContext(currentReportType).valueLabel]} />
+                    <YAxis 
+                      label={{ 
+                        value: getReportContext(currentReportType).valueLabel, 
+                        angle: -90, 
+                        position: 'insideLeft',
+                        style: { textAnchor: 'middle' }
+                      }} 
+                      tickFormatter={formatYAxisTick}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
                     <Bar dataKey="value" fill={getReportColor(currentReportType)} />
                   </BarChart>
                 </ResponsiveContainer>
               </TabsContent>
               
               <TabsContent value="table">
-                <div className="border rounded-md">
+                <div className="border rounded-md overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Name</TableHead>
+                        <TableHead>Item Name</TableHead>
                         <TableHead>{getReportContext(currentReportType).valueLabel}</TableHead>
                         <TableHead>Details</TableHead>
                       </TableRow>
@@ -384,8 +441,10 @@ const Reports = () => {
                     <TableBody>
                       {getReportData(currentReportType).map((item, index) => (
                         <TableRow key={index}>
-                          <TableCell>{item.name}</TableCell>
-                          <TableCell>{item.value}</TableCell>
+                          <TableCell className="font-medium">{item.name}</TableCell>
+                          <TableCell className={getCellColor(currentReportType, item.value)}>
+                            {item.value}
+                          </TableCell>
                           <TableCell>{item.detail}</TableCell>
                         </TableRow>
                       ))}
