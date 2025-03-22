@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -25,7 +24,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 const Reports = () => {
   const { toast } = useToast();
-  const { inventory } = useInventory();
+  const { items } = useInventory();
   const { assets } = useAssets();
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -132,15 +131,20 @@ const Reports = () => {
 
   // Generate mock data for reports based on inventory and assets
   const getReportData = (reportType: string) => {
+    // Ensure we have data before trying to use it
+    if (!items || !assets) {
+      return [];
+    }
+    
     switch(reportType) {
       case 'inventory-status':
-        return inventory.slice(0, 5).map(item => ({
+        return items.slice(0, 5).map(item => ({
           name: item.name,
           value: item.quantity,
           category: item.category
         }));
       case 'low-stock':
-        return inventory
+        return items
           .filter(item => item.quantity < 10)
           .slice(0, 5)
           .map(item => ({
@@ -151,11 +155,11 @@ const Reports = () => {
       case 'asset-status':
         return assets.slice(0, 5).map(asset => ({
           name: asset.name,
-          value: asset.status === 'Available' ? 1 : 0,
+          value: asset.status === 'available' ? 1 : 0,
           status: asset.status
         }));
       case 'consumption-trends':
-        return inventory.slice(0, 5).map(item => ({
+        return items.slice(0, 5).map(item => ({
           name: item.name,
           value: Math.floor(Math.random() * 50) + 10
         }));
@@ -165,7 +169,7 @@ const Reports = () => {
           value: Math.floor(Math.random() * 80) + 20
         }));
       case 'expiry-tracking':
-        return inventory.slice(0, 5).map(item => ({
+        return items.slice(0, 5).map(item => ({
           name: item.name,
           value: Math.floor(Math.random() * 30) + 1
         }));
