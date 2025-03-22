@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -21,6 +22,14 @@ import { useInventory } from '@/hooks/useInventory';
 import { useAssets } from '@/hooks/useAssets';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { 
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell 
+} from '@/components/ui/table';
 
 const Reports = () => {
   const { toast } = useToast();
@@ -35,42 +44,42 @@ const Reports = () => {
     {
       id: 'inventory-status',
       title: 'Inventory Status Report',
-      description: 'Complete overview of current inventory levels, values, and statuses',
+      description: 'Overview of current inventory levels',
       icon: <Package className="h-8 w-8 text-blue-500" />,
       actions: ['Generate', 'Schedule'],
     },
     {
       id: 'low-stock',
       title: 'Low Stock Report',
-      description: 'List of all items that are below or approaching minimum stock levels',
+      description: 'Items below minimum stock levels',
       icon: <AlertTriangle className="h-8 w-8 text-amber-500" />,
       actions: ['Generate', 'Schedule'],
     },
     {
       id: 'asset-status',
       title: 'Asset Status Report',
-      description: 'Status and location of all assets, including checked out items',
+      description: 'Current status of all assets',
       icon: <Briefcase className="h-8 w-8 text-green-500" />,
       actions: ['Generate', 'Schedule'],
     },
     {
       id: 'consumption-trends',
-      title: 'Consumption Trends',
-      description: 'Analysis of inventory usage patterns over time',
+      title: 'Usage Report',
+      description: 'How inventory is being used',
       icon: <TrendingDown className="h-8 w-8 text-purple-500" />,
       actions: ['Generate', 'Schedule'],
     },
     {
       id: 'asset-utilization',
-      title: 'Asset Utilization',
-      description: 'Frequency and duration of asset checkouts',
+      title: 'Asset Usage',
+      description: 'How frequently assets are used',
       icon: <TrendingUp className="h-8 w-8 text-indigo-500" />,
       actions: ['Generate', 'Schedule'],
     },
     {
       id: 'expiry-tracking',
-      title: 'Expiry Tracking',
-      description: 'List of items approaching their expiration dates',
+      title: 'Expiry Report',
+      description: 'Items approaching expiration',
       icon: <Calendar className="h-8 w-8 text-red-500" />,
       actions: ['Generate', 'Schedule'],
     },
@@ -129,7 +138,55 @@ const Reports = () => {
     });
   };
 
-  // Generate mock data for reports based on inventory and assets
+  // Get report title with description for better context
+  const getReportContext = (reportType: string) => {
+    switch(reportType) {
+      case 'inventory-status':
+        return {
+          title: "Inventory Status",
+          description: "Current quantities of items in stock",
+          valueLabel: "Quantity in stock"
+        };
+      case 'low-stock':
+        return {
+          title: "Low Stock Items",
+          description: "Items below recommended stock levels",
+          valueLabel: "Current quantity"
+        };
+      case 'asset-status':
+        return {
+          title: "Asset Availability",
+          description: "Current status of assets",
+          valueLabel: "Status (1=Available, 0=Unavailable)"
+        };
+      case 'consumption-trends':
+        return {
+          title: "Usage Trends",
+          description: "Quantity of items used recently",
+          valueLabel: "Units used"
+        };
+      case 'asset-utilization':
+        return {
+          title: "Asset Usage Rate",
+          description: "How frequently assets are being used",
+          valueLabel: "Usage percentage"
+        };
+      case 'expiry-tracking':
+        return {
+          title: "Expiring Items",
+          description: "Items approaching expiration date",
+          valueLabel: "Days until expiry"
+        };
+      default:
+        return {
+          title: "Report",
+          description: "Generated report data",
+          valueLabel: "Value"
+        };
+    }
+  };
+
+  // Generate data for reports based on inventory and assets
   const getReportData = (reportType: string) => {
     // Ensure we have data before trying to use it
     if (!items || !assets) {
@@ -141,7 +198,7 @@ const Reports = () => {
         return items.slice(0, 5).map(item => ({
           name: item.name,
           value: item.quantity,
-          category: item.category
+          detail: `${item.category}`
         }));
       case 'low-stock':
         return items
@@ -150,31 +207,52 @@ const Reports = () => {
           .map(item => ({
             name: item.name,
             value: item.quantity,
-            threshold: 10
+            detail: `Min: ${item.minStockLevel}`
           }));
       case 'asset-status':
         return assets.slice(0, 5).map(asset => ({
           name: asset.name,
           value: asset.status === 'available' ? 1 : 0,
-          status: asset.status
+          detail: asset.status
         }));
       case 'consumption-trends':
         return items.slice(0, 5).map(item => ({
           name: item.name,
-          value: Math.floor(Math.random() * 50) + 10
+          value: Math.floor(Math.random() * 50) + 10,
+          detail: `${item.unit}`
         }));
       case 'asset-utilization':
         return assets.slice(0, 5).map(asset => ({
           name: asset.name,
-          value: Math.floor(Math.random() * 80) + 20
+          value: Math.floor(Math.random() * 80) + 20,
+          detail: `${asset.category}`
         }));
       case 'expiry-tracking':
-        return items.slice(0, 5).map(item => ({
-          name: item.name,
-          value: Math.floor(Math.random() * 30) + 1
-        }));
+        return items
+          .filter(item => item.expiryDate)
+          .slice(0, 5)
+          .map(item => ({
+            name: item.name,
+            value: item.expiryDate ? 
+              Math.floor((new Date(item.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 
+              0,
+            detail: item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : 'N/A'
+          }));
       default:
         return [];
+    }
+  };
+
+  // Get report colors based on type
+  const getReportColor = (reportType: string) => {
+    switch(reportType) {
+      case 'inventory-status': return "#3b82f6"; // blue
+      case 'low-stock': return "#f59e0b"; // amber 
+      case 'asset-status': return "#10b981"; // green
+      case 'consumption-trends': return "#8b5cf6"; // purple
+      case 'asset-utilization': return "#6366f1"; // indigo
+      case 'expiry-tracking': return "#ef4444"; // red
+      default: return "#3b82f6"; // blue
     }
   };
 
@@ -267,10 +345,10 @@ const Reports = () => {
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
-              {reportTypes.find(r => r.id === currentReportType)?.title || 'Report'}
+              {getReportContext(currentReportType).title}
             </DialogTitle>
             <DialogDescription>
-              Generated on {new Date().toLocaleDateString()}
+              {getReportContext(currentReportType).description} - Generated on {new Date().toLocaleDateString()}
             </DialogDescription>
           </DialogHeader>
           
@@ -286,35 +364,33 @@ const Reports = () => {
                   <BarChart data={getReportData(currentReportType)}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#8884d8" />
+                    <YAxis label={{ value: getReportContext(currentReportType).valueLabel, angle: -90, position: 'insideLeft' }} />
+                    <Tooltip formatter={(value) => [`${value}`, getReportContext(currentReportType).valueLabel]} />
+                    <Bar dataKey="value" fill={getReportColor(currentReportType)} />
                   </BarChart>
                 </ResponsiveContainer>
               </TabsContent>
               
               <TabsContent value="table">
                 <div className="border rounded-md">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b bg-muted/50">
-                        <th className="p-2 text-left">Name</th>
-                        <th className="p-2 text-left">Value</th>
-                        <th className="p-2 text-left">Details</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>{getReportContext(currentReportType).valueLabel}</TableHead>
+                        <TableHead>Details</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {getReportData(currentReportType).map((item, index) => (
-                        <tr key={index} className="border-b">
-                          <td className="p-2">{item.name}</td>
-                          <td className="p-2">{item.value}</td>
-                          <td className="p-2">
-                            {item.category || item.status || item.threshold || '-'}
-                          </td>
-                        </tr>
+                        <TableRow key={index}>
+                          <TableCell>{item.name}</TableCell>
+                          <TableCell>{item.value}</TableCell>
+                          <TableCell>{item.detail}</TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
               </TabsContent>
             </Tabs>
