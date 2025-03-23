@@ -28,4 +28,5 @@ export interface ReportContextType {
   description: string;
   valueLabel: string;
   colorMapping?: Record<string, string>;
+  dataFormatting?: (value: number) => string;
 }

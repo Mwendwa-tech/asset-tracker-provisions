@@ -27,7 +27,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AssetForm } from '@/components/forms/AssetForm';
@@ -76,12 +75,30 @@ const Assets = () => {
   };
 
   const handleCheckout = (asset: Asset) => {
+    if (asset.status !== 'available') {
+      toast({
+        title: "Cannot check out",
+        description: `Asset is currently ${asset.status}`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setSelectedAsset(asset);
     setDialogMode('checkout');
     setDialogOpen(true);
   };
 
   const handleCheckin = (asset: Asset) => {
+    if (asset.status !== 'checked-out') {
+      toast({
+        title: "Cannot check in",
+        description: "Asset is not currently checked out",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setSelectedAsset(asset);
     setDialogMode('checkin');
     setDialogOpen(true);
@@ -108,6 +125,22 @@ const Assets = () => {
       checkInAsset(selectedAsset.id, data.notes);
       setDialogOpen(false);
     }
+  };
+
+  const handleStatusChange = (asset: Asset, newStatus: Asset['status']) => {
+    if (asset.status === newStatus) return;
+    
+    if (newStatus === 'checked-out') {
+      handleCheckout(asset);
+      return;
+    }
+    
+    if (asset.status === 'checked-out' && newStatus === 'available') {
+      handleCheckin(asset);
+      return;
+    }
+    
+    updateAsset(asset.id, { status: newStatus });
   };
 
   const assetColumns = [
@@ -254,7 +287,7 @@ const Assets = () => {
                 {
                   header: "Expected Return",
                   accessorKey: "expectedReturnDate" as keyof Asset,
-                  cell: (item: Asset) => formatDate(item.expectedReturnDate),
+                  cell: (item: Asset) => item.expectedReturnDate ? formatDate(item.expectedReturnDate) : "No date set",
                   sortable: true,
                 },
               ]}
@@ -326,9 +359,25 @@ const Assets = () => {
               <div className="flex justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Status</p>
-                  <Badge className={getStatusColorClass(selectedAsset.status)}>
-                    {selectedAsset.status}
-                  </Badge>
+                  <div className="flex items-center space-x-2">
+                    <Badge className={getStatusColorClass(selectedAsset.status)}>
+                      {selectedAsset.status}
+                    </Badge>
+                    <Select 
+                      value={selectedAsset.status} 
+                      onValueChange={(value) => handleStatusChange(selectedAsset, value as Asset['status'])}
+                    >
+                      <SelectTrigger className="h-7 w-32 text-xs">
+                        <SelectValue placeholder="Change status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="available">Available</SelectItem>
+                        <SelectItem value="checked-out">Check Out</SelectItem>
+                        <SelectItem value="maintenance">Maintenance</SelectItem>
+                        <SelectItem value="retired">Retired</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Condition</p>
@@ -398,11 +447,6 @@ const Assets = () => {
                   <Button onClick={() => handleCheckin(selectedAsset)}>
                     <CheckCircle className="mr-2 h-4 w-4" />
                     Check In
-                  </Button>
-                ) : selectedAsset.status === 'maintenance' ? (
-                  <Button onClick={() => updateAsset(selectedAsset.id, { status: 'available' })}>
-                    <AlertCircle className="mr-2 h-4 w-4" />
-                    Mark as Available
                   </Button>
                 ) : null}
               </div>

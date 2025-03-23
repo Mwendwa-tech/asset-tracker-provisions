@@ -13,7 +13,7 @@ import {
   ArrowUpDown
 } from 'lucide-react';
 import { useInventory } from '@/hooks/useInventory';
-import { InventoryItem } from '@/types';
+import { InventoryItem, StockTransaction } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency, formatDate, getStockLevelClass } from '@/utils/formatters';
 import {
@@ -22,9 +22,10 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { InventoryForm } from '@/components/forms/InventoryForm';
+import { StockAdjustmentForm } from '@/components/forms/StockAdjustmentForm';
 
 const Inventory = () => {
   const { 
@@ -34,15 +35,62 @@ const Inventory = () => {
     loading, 
     addItem, 
     updateItem, 
-    deleteItem 
+    deleteItem,
+    addTransaction
   } = useInventory();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [dialogMode, setDialogMode] = useState<'view' | 'edit' | 'add' | 'adjust'>('view');
 
   const handleRowClick = (item: InventoryItem) => {
     setSelectedItem(item);
+    setDialogMode('view');
     setDialogOpen(true);
+  };
+
+  const handleAddItem = () => {
+    setSelectedItem(null);
+    setDialogMode('add');
+    setDialogOpen(true);
+  };
+
+  const handleEditItem = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setDialogMode('edit');
+    setDialogOpen(true);
+  };
+
+  const handleDeleteItem = (item: InventoryItem) => {
+    if (window.confirm(`Are you sure you want to delete ${item.name}?`)) {
+      deleteItem(item.id);
+    }
+  };
+
+  const handleAdjustStock = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setDialogMode('adjust');
+    setDialogOpen(true);
+  };
+
+  const handleInventoryFormSubmit = (data: Omit<InventoryItem, 'id' | 'lastUpdated'>) => {
+    if (selectedItem) {
+      updateItem(selectedItem.id, data);
+    } else {
+      addItem(data);
+    }
+    setDialogOpen(false);
+  };
+
+  const handleStockAdjustmentSubmit = (data: Omit<StockTransaction, 'id' | 'date' | 'itemId' | 'itemName'>) => {
+    if (selectedItem) {
+      addTransaction({
+        ...data,
+        itemId: selectedItem.id,
+        itemName: selectedItem.name,
+      });
+      setDialogOpen(false);
+    }
   };
 
   const inventoryColumns = [
@@ -95,21 +143,41 @@ const Inventory = () => {
   const rowActions = [
     {
       label: "Edit",
-      onClick: (item: InventoryItem) => {
-        console.log("Edit:", item);
-        // You would implement edit functionality here
-      },
+      onClick: handleEditItem,
       icon: <Edit className="h-4 w-4" />,
     },
     {
       label: "Delete",
-      onClick: (item: InventoryItem) => {
-        console.log("Delete:", item);
-        // You would implement delete functionality here
-      },
+      onClick: handleDeleteItem,
       icon: <Trash className="h-4 w-4" />,
     },
   ];
+
+  const getDialogTitle = () => {
+    switch (dialogMode) {
+      case 'add':
+        return 'Add New Item';
+      case 'edit':
+        return 'Edit Item';
+      case 'adjust':
+        return 'Adjust Stock';
+      default:
+        return selectedItem?.name || 'Item Details';
+    }
+  };
+
+  const getDialogDescription = () => {
+    switch (dialogMode) {
+      case 'add':
+        return 'Enter details for the new inventory item';
+      case 'edit':
+        return 'Update inventory item information';
+      case 'adjust':
+        return 'Add or remove stock from inventory';
+      default:
+        return selectedItem ? `${selectedItem.category} • ${selectedItem.location}` : '';
+    }
+  };
 
   return (
     <MainLayout>
@@ -118,7 +186,7 @@ const Inventory = () => {
           title="Inventory Management"
           description="Manage your entire inventory from one place"
           actions={
-            <Button>
+            <Button onClick={handleAddItem}>
               <Plus className="mr-2 h-4 w-4" /> Add Item
             </Button>
           }
@@ -229,15 +297,15 @@ const Inventory = () => {
 
       {/* Item Detail Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className={dialogMode === 'view' ? "sm:max-w-md" : "sm:max-w-lg"}>
           <DialogHeader>
-            <DialogTitle>{selectedItem?.name}</DialogTitle>
+            <DialogTitle>{getDialogTitle()}</DialogTitle>
             <DialogDescription>
-              {selectedItem?.category} • {selectedItem?.location}
+              {getDialogDescription()}
             </DialogDescription>
           </DialogHeader>
           
-          {selectedItem && (
+          {dialogMode === 'view' && selectedItem && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -288,16 +356,34 @@ const Inventory = () => {
               )}
               
               <div className="flex justify-end space-x-2">
-                <Button variant="outline">
+                <Button variant="outline" onClick={() => handleEditItem(selectedItem)}>
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
                 </Button>
-                <Button>
+                <Button onClick={() => handleAdjustStock(selectedItem)}>
                   <ArrowUpDown className="mr-2 h-4 w-4" />
                   Adjust Stock
                 </Button>
               </div>
             </div>
+          )}
+          
+          {(dialogMode === 'add' || dialogMode === 'edit') && (
+            <InventoryForm 
+              item={dialogMode === 'edit' ? selectedItem || undefined : undefined}
+              onSubmit={handleInventoryFormSubmit}
+              onCancel={() => setDialogOpen(false)}
+              loading={loading}
+            />
+          )}
+          
+          {dialogMode === 'adjust' && selectedItem && (
+            <StockAdjustmentForm 
+              item={selectedItem}
+              onSubmit={handleStockAdjustmentSubmit}
+              onCancel={() => setDialogOpen(false)}
+              loading={loading}
+            />
           )}
         </DialogContent>
       </Dialog>
