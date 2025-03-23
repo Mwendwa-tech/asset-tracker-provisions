@@ -21,11 +21,11 @@ const Reports = () => {
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [reportId, setReportId] = useState("");
   
-  const handleGenerateReport = (id: string, title: string) => {
-    setCurrentReportType(id);
+  const handleGenerateReport = (reportType: string, title: string) => {
+    setCurrentReportType(reportType);
     
     // Generate the report data
-    const { data, reportId } = generateReport(id, title);
+    const { data, reportId } = generateReport(reportType, title);
     
     // Set the report data
     setReportData(data);

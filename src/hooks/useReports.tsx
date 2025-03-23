@@ -18,7 +18,12 @@ export function useReports() {
   const [recentReports, setRecentReports] = useState<RecentReport[]>(() => {
     try {
       const savedReports = localStorage.getItem(STORAGE_KEY);
-      return savedReports ? JSON.parse(savedReports) : getRecentReports();
+      if (savedReports) {
+        // Parse the saved reports and add icons back
+        const parsedReports = JSON.parse(savedReports);
+        return parsedReports; // Icons will be added dynamically in the RecentReportsList component
+      }
+      return getRecentReports();
     } catch (error) {
       console.error('Error loading recent reports from localStorage:', error);
       return getRecentReports();
@@ -30,12 +35,12 @@ export function useReports() {
   // Save to localStorage whenever reports change
   useEffect(() => {
     try {
-      // Create a safe-to-serialize version of reports
+      // Create a safe-to-serialize version of reports without React elements
       const reportsToSave = recentReports.map(report => ({
         type: report.type,
         title: report.title,
         date: report.date,
-        // Explicitly omit icon property which might contain React elements
+        // Intentionally omitting the icon property which contains React elements
       }));
       
       localStorage.setItem(STORAGE_KEY, JSON.stringify(reportsToSave));
@@ -61,6 +66,7 @@ export function useReports() {
           month: 'short', 
           day: 'numeric' 
         }),
+        // Don't add icon here - it will be generated dynamically in the UI
       };
       
       // Add to recent reports

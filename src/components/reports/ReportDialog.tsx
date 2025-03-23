@@ -13,13 +13,14 @@ import { ReportChartView } from "./ReportChartView";
 import { ReportTableView } from "./ReportTableView";
 import { ReportData, ReportContextType } from "@/types/reports";
 import { toast } from "sonner";
+import { getReportColor } from "./ReportUtils";
 
 interface ReportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   reportType: string;
-  reportTitle: string;
-  reportId: string;
+  reportTitle: string; // Added to match usage in Reports.tsx
+  reportId: string;    // Added to match usage in Reports.tsx
   reportContext: ReportContextType;
   data: ReportData[];
 }
@@ -38,8 +39,8 @@ export const ReportDialog = ({
     toast.success(`Downloaded ${reportTitle}`);
   };
 
-  // Default to a blue color if none is specified
-  const reportColor = "#3b82f6";
+  // Get the color from the utility function
+  const reportColor = getReportColor(reportType);
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
