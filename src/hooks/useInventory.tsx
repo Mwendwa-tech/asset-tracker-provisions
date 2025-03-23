@@ -15,12 +15,37 @@ import {
 import { generateId } from '@/utils/formatters';
 import { toast } from '@/components/ui/use-toast';
 
+// Use localStorage key constants
+const STORAGE_KEYS = {
+  INVENTORY_ITEMS: 'hostel-inventory-items',
+  TRANSACTIONS: 'hostel-inventory-transactions'
+};
+
 export function useInventory() {
-  const [items, setItems] = useState<InventoryItem[]>(mockInventoryItems);
+  // Initialize state with data from localStorage or mock data
+  const [items, setItems] = useState<InventoryItem[]>(() => {
+    const savedItems = localStorage.getItem(STORAGE_KEYS.INVENTORY_ITEMS);
+    return savedItems ? JSON.parse(savedItems) : mockInventoryItems;
+  });
+  
   const [summary, setSummary] = useState<InventorySummary>(getInventorySummary());
   const [lowStockAlerts, setLowStockAlerts] = useState<LowStockAlert[]>(getLowStockAlerts());
-  const [transactions, setTransactions] = useState<StockTransaction[]>(mockStockTransactions);
+  
+  const [transactions, setTransactions] = useState<StockTransaction[]>(() => {
+    const savedTransactions = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
+    return savedTransactions ? JSON.parse(savedTransactions) : mockStockTransactions;
+  });
+  
   const [loading, setLoading] = useState(false);
+
+  // Save to localStorage whenever items or transactions change
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.INVENTORY_ITEMS, JSON.stringify(items));
+  }, [items]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
+  }, [transactions]);
 
   // Update summary and alerts whenever items change
   useEffect(() => {
@@ -85,7 +110,10 @@ export function useInventory() {
           lastUpdated: new Date()
         };
         
-        setItems(currentItems => [...currentItems, itemToAdd]);
+        setItems(currentItems => {
+          const updatedItems = [...currentItems, itemToAdd];
+          return updatedItems;
+        });
         
         // Record transaction
         addTransaction({
@@ -187,7 +215,10 @@ export function useInventory() {
       date: new Date()
     };
     
-    setTransactions(current => [newTransaction, ...current]);
+    setTransactions(current => {
+      const updatedTransactions = [newTransaction, ...current];
+      return updatedTransactions;
+    });
     
     // Update item quantity based on transaction
     const itemToUpdate = items.find(item => item.id === transaction.itemId);

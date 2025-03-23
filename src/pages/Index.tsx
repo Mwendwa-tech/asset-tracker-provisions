@@ -5,16 +5,18 @@ import { StatCard } from '@/components/common/StatCard';
 import { InventorySummary } from '@/components/dashboard/InventorySummary';
 import { AssetSummary } from '@/components/dashboard/AssetSummary';
 import { LowStockAlerts } from '@/components/dashboard/LowStockAlert';
-import { getInventorySummary, getAssetSummary, getLowStockAlerts } from '@/utils/mockData';
+import { getAssetSummary } from '@/utils/mockData';
 import { formatCurrency } from '@/utils/formatters';
 import { Package, Briefcase, AlertTriangle, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { useInventory } from '@/hooks/useInventory';
+import { useAssets } from '@/hooks/useAssets';
 
 const Dashboard = () => {
-  const inventorySummary = getInventorySummary();
-  const assetSummary = getAssetSummary();
-  const lowStockAlerts = getLowStockAlerts();
+  // Use the hooks instead of direct mock data
+  const { summary: inventorySummary, lowStockAlerts } = useInventory();
+  const { summary: assetSummary } = useAssets();
 
   return (
     <MainLayout>
