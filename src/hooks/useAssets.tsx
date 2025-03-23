@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Asset, 
@@ -13,11 +12,36 @@ import {
 import { generateId } from '@/utils/formatters';
 import { toast } from '@/components/ui/use-toast';
 
+// Use localStorage key constants
+const STORAGE_KEYS = {
+  ASSETS: 'hostel-assets',
+  CHECKOUT_HISTORY: 'hostel-checkout-history'
+};
+
 export function useAssets() {
-  const [assets, setAssets] = useState<Asset[]>(mockAssets);
+  // Initialize state with data from localStorage or mock data
+  const [assets, setAssets] = useState<Asset[]>(() => {
+    const savedAssets = localStorage.getItem(STORAGE_KEYS.ASSETS);
+    return savedAssets ? JSON.parse(savedAssets) : mockAssets;
+  });
+  
   const [summary, setSummary] = useState<AssetSummary>(getAssetSummary());
-  const [checkoutHistory, setCheckoutHistory] = useState<CheckoutHistory[]>(mockCheckoutHistory);
+  
+  const [checkoutHistory, setCheckoutHistory] = useState<CheckoutHistory[]>(() => {
+    const savedHistory = localStorage.getItem(STORAGE_KEYS.CHECKOUT_HISTORY);
+    return savedHistory ? JSON.parse(savedHistory) : mockCheckoutHistory;
+  });
+  
   const [loading, setLoading] = useState(false);
+
+  // Save to localStorage whenever assets or checkout history change
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.ASSETS, JSON.stringify(assets));
+  }, [assets]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.CHECKOUT_HISTORY, JSON.stringify(checkoutHistory));
+  }, [checkoutHistory]);
 
   // Update summary whenever assets change
   useEffect(() => {
@@ -68,7 +92,10 @@ export function useAssets() {
           id: generateId()
         };
         
-        setAssets(currentAssets => [...currentAssets, assetToAdd]);
+        setAssets(currentAssets => {
+          const updatedAssets = [...currentAssets, assetToAdd];
+          return updatedAssets;
+        });
         
         toast({
           title: 'Asset added',
@@ -190,7 +217,10 @@ export function useAssets() {
         notes
       };
       
-      setCheckoutHistory(current => [newCheckout, ...current]);
+      setCheckoutHistory(current => {
+        const updatedHistory = [newCheckout, ...current];
+        return updatedHistory;
+      });
       
       toast({
         title: 'Asset checked out',

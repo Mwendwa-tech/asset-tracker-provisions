@@ -5,9 +5,22 @@ import { mockSuppliers } from '@/utils/mockData';
 import { generateId } from '@/utils/formatters';
 import { toast } from '@/components/ui/use-toast';
 
+// Use localStorage key constant
+const STORAGE_KEY = 'hostel-suppliers';
+
 export function useSuppliers() {
-  const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers);
+  // Initialize with localStorage data or fallback to mock data
+  const [suppliers, setSuppliers] = useState<Supplier[]>(() => {
+    const savedSuppliers = localStorage.getItem(STORAGE_KEY);
+    return savedSuppliers ? JSON.parse(savedSuppliers) : mockSuppliers;
+  });
+  
   const [loading, setLoading] = useState(false);
+
+  // Save to localStorage whenever suppliers change
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(suppliers));
+  }, [suppliers]);
 
   // Add new supplier
   const addSupplier = (newSupplier: Omit<Supplier, 'id'>) => {
@@ -21,7 +34,10 @@ export function useSuppliers() {
           id: generateId()
         };
         
-        setSuppliers(currentSuppliers => [...currentSuppliers, supplierToAdd]);
+        setSuppliers(currentSuppliers => {
+          const updatedSuppliers = [...currentSuppliers, supplierToAdd];
+          return updatedSuppliers;
+        });
         
         toast({
           title: 'Supplier added',
