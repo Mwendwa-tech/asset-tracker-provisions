@@ -1,105 +1,111 @@
 
 import { useState, useEffect } from 'react';
+import { 
+  getRecentReports, 
+  getReportTypes, 
+  getReportData, 
+  getReportContext 
+} from '@/components/reports/ReportUtils';
 import { RecentReport, ReportData } from '@/types/reports';
-import { getRecentReports, getReportData } from '@/components/reports/ReportUtils';
 import { generateId } from '@/utils/formatters';
-import { toast } from '@/components/ui/use-toast';
-import { useInventory } from './useInventory';
-import { useAssets } from './useAssets';
+import { toast } from 'sonner';
 
-// Use localStorage key constant
-const STORAGE_KEY = 'hostel-recent-reports';
+// Use localStorage key constants
+const STORAGE_KEYS = {
+  RECENT_REPORTS: 'hostel-recent-reports'
+};
+
+// Helper to safely serialize reports for localStorage (removing non-serializable icon property)
+const serializeReports = (reports: RecentReport[]) => {
+  return reports.map(report => {
+    // Exclude the icon property as it's a React element
+    const { icon, ...serializableReport } = report;
+    return serializableReport;
+  });
+};
 
 export function useReports() {
-  const { items: inventoryItems } = useInventory();
-  const { assets } = useAssets();
-  
-  // Initialize with localStorage data or fallback to mock data
+  // Initialize state with data from localStorage or mock data
   const [recentReports, setRecentReports] = useState<RecentReport[]>(() => {
     try {
-      const savedReports = localStorage.getItem(STORAGE_KEY);
+      const savedReports = localStorage.getItem(STORAGE_KEYS.RECENT_REPORTS);
       if (savedReports) {
-        // Parse the saved reports and add icons back
+        // Deserialize and recreate reports with proper icons
         const parsedReports = JSON.parse(savedReports);
-        return parsedReports; // Icons will be added dynamically in the RecentReportsList component
+        return parsedReports.map((report: Omit<RecentReport, 'icon'>) => {
+          // We don't store icons in localStorage, so we need to regenerate them
+          // They will be added in the RecentReportsList component
+          return {
+            ...report,
+            icon: null // Placeholder, will be filled by RecentReportsList
+          };
+        });
       }
       return getRecentReports();
     } catch (error) {
-      console.error('Error loading recent reports from localStorage:', error);
+      console.error('Error loading recent reports:', error);
       return getRecentReports();
     }
   });
   
   const [loading, setLoading] = useState(false);
 
-  // Save to localStorage whenever reports change
+  // Save to localStorage whenever recent reports change
   useEffect(() => {
     try {
-      // Create a safe-to-serialize version of reports without React elements
-      const reportsToSave = recentReports.map(report => ({
-        type: report.type,
-        title: report.title,
-        date: report.date,
-        // Intentionally omitting the icon property which contains React elements
-      }));
-      
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(reportsToSave));
+      // Store only serializable data (exclude React elements like icons)
+      const serializableReports = serializeReports(recentReports);
+      localStorage.setItem(STORAGE_KEYS.RECENT_REPORTS, JSON.stringify(serializableReports));
     } catch (error) {
-      console.error('Error saving recent reports to localStorage:', error);
+      console.error('Error saving recent reports:', error);
     }
   }, [recentReports]);
 
-  // Generate a new report
-  const generateReport = (reportType: string, reportTitle: string): { data: ReportData[], reportId: string } => {
+  // Generate report data
+  const generateReport = (reportType: string, title: string) => {
     setLoading(true);
     
     try {
-      // Generate report data using actual inventory and asset data
-      const reportData = getReportData(reportType, inventoryItems, assets);
-      
-      // Create new report record
-      const newReport: RecentReport = {
-        type: reportType,
-        title: reportTitle,
-        date: new Date().toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'short', 
-          day: 'numeric' 
-        }),
-        // Don't add icon here - it will be generated dynamically in the UI
-      };
-      
-      // Add to recent reports
-      setRecentReports(current => {
-        const updatedReports = [newReport, ...current.slice(0, 9)]; // Keep max 10 reports
-        return updatedReports;
-      });
-      
-      setLoading(false);
-      
-      const reportId = generateId();
-      
-      toast({
-        title: 'Report Generated',
-        description: `${reportTitle} has been created successfully.`,
-      });
-      
-      return { data: reportData, reportId };
+      // Simulate API call delay
+      setTimeout(() => {
+        // Generate report data based on type
+        const data = getReportData(reportType);
+        const reportId = generateId();
+        
+        // Add to recent reports
+        const newReport: RecentReport = {
+          type: reportType,
+          title: title,
+          date: new Date().toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric' 
+          }),
+          icon: null // Placeholder, will be filled by RecentReportsList
+        };
+        
+        setRecentReports(prev => [newReport, ...prev.slice(0, 4)]);
+        
+        toast.success(`Generated: ${title}`);
+        setLoading(false);
+        
+        return { data, reportId };
+      }, 1000);
     } catch (error) {
       console.error('Error generating report:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to generate report. Please try again.',
-        variant: 'destructive'
-      });
+      toast.error('Failed to generate report');
       setLoading(false);
       return { data: [], reportId: '' };
     }
+    
+    // Return empty data while loading
+    return { data: [], reportId: generateId() };
   };
 
   return {
     recentReports,
     loading,
+    reportTypes: getReportTypes(),
     generateReport
   };
 }

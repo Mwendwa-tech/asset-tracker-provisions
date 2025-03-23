@@ -19,8 +19,8 @@ interface ReportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   reportType: string;
-  reportTitle: string; // Added to match usage in Reports.tsx
-  reportId: string;    // Added to match usage in Reports.tsx
+  reportTitle: string;
+  reportId: string;
   reportContext: ReportContextType;
   data: ReportData[];
 }

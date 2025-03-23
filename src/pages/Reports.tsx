@@ -7,13 +7,12 @@ import { RecentReportsList } from '@/components/reports/RecentReportsList';
 import { ReportDialog } from '@/components/reports/ReportDialog';
 import { Button } from '@/components/ui/button';
 import { Calendar } from 'lucide-react';
-import { getReportTypes, getReportContext } from '@/components/reports/ReportUtils';
+import { getReportContext } from '@/components/reports/ReportUtils';
 import { ReportData } from '@/types/reports';
 import { useReports } from '@/hooks/useReports';
 
 const Reports = () => {
-  const { recentReports, loading, generateReport } = useReports();
-  const reportTypes = getReportTypes();
+  const { recentReports, loading, generateReport, reportTypes } = useReports();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentReportType, setCurrentReportType] = useState("");
