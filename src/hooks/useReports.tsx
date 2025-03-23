@@ -16,15 +16,32 @@ export function useReports() {
   
   // Initialize with localStorage data or fallback to mock data
   const [recentReports, setRecentReports] = useState<RecentReport[]>(() => {
-    const savedReports = localStorage.getItem(STORAGE_KEY);
-    return savedReports ? JSON.parse(savedReports) : getRecentReports();
+    try {
+      const savedReports = localStorage.getItem(STORAGE_KEY);
+      return savedReports ? JSON.parse(savedReports) : getRecentReports();
+    } catch (error) {
+      console.error('Error loading recent reports from localStorage:', error);
+      return getRecentReports();
+    }
   });
   
   const [loading, setLoading] = useState(false);
 
   // Save to localStorage whenever reports change
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(recentReports));
+    try {
+      // Create a safe-to-serialize version of reports
+      const reportsToSave = recentReports.map(report => ({
+        type: report.type,
+        title: report.title,
+        date: report.date,
+        // Explicitly omit icon property which might contain React elements
+      }));
+      
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(reportsToSave));
+    } catch (error) {
+      console.error('Error saving recent reports to localStorage:', error);
+    }
   }, [recentReports]);
 
   // Generate a new report
