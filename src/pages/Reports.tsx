@@ -70,7 +70,10 @@ const Reports = () => {
           ))}
         </div>
         
-        <RecentReportsList reports={recentReports} onReportClick={handleGenerateReport} />
+        <RecentReportsList 
+          reports={recentReports} 
+          onReportClick={handleGenerateReport} 
+        />
         
         <ReportDialog
           open={isDialogOpen}

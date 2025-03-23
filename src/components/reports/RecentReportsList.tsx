@@ -9,10 +9,10 @@ import { toast } from "sonner";
 
 interface RecentReportsListProps {
   reports: RecentReport[];
-  onDownload: (reportType: string) => void;
+  onReportClick: (reportType: string, reportTitle: string) => void;
 }
 
-export const RecentReportsList = ({ reports, onDownload }: RecentReportsListProps) => {
+export const RecentReportsList = ({ reports, onReportClick }: RecentReportsListProps) => {
   // Function to get appropriate icon based on report type
   const getReportIcon = (type: string) => {
     if (!type) return <FileText className="h-5 w-5 text-blue-500" />;
@@ -29,7 +29,7 @@ export const RecentReportsList = ({ reports, onDownload }: RecentReportsListProp
   };
 
   const handleDownload = (reportType: string, reportTitle: string) => {
-    onDownload(reportType);
+    onReportClick(reportType, reportTitle);
     toast(`Downloaded "${reportTitle}" report`);
   };
 
