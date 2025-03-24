@@ -1,3 +1,4 @@
+
 import * as React from "react"
 
 const MOBILE_BREAKPOINT = 768
@@ -17,3 +18,15 @@ export function useIsMobile() {
 
   return !!isMobile
 }
+
+// For backward compatibility with existing code
+export const useMobileToggle = () => {
+  const isMobile = useIsMobile();
+  const [isToggled, setIsToggled] = React.useState(false);
+  
+  const toggle = React.useCallback(() => {
+    setIsToggled(prev => !prev);
+  }, []);
+  
+  return { isMobile, isToggled, toggle };
+};

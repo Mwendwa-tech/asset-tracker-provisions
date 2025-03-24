@@ -3,11 +3,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  MagnifyingGlassIcon,
-  BellIcon,
-  UserCircleIcon,
-  Bars3Icon,
-} from "@heroicons/react/24/outline";
+  Search,
+  Bell,
+  UserCircle,
+  Menu,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -18,13 +18,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useMobileToggle } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 
-export function Navbar() {
+interface NavbarProps {
+  onMenuClick?: () => void;
+}
+
+export function Navbar({ onMenuClick }: NavbarProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { toggle } = useMobileToggle();
+  const isMobile = useIsMobile();
 
   const handleSignOut = async () => {
     await signOut();
@@ -35,13 +39,13 @@ export function Navbar() {
     <div className="border-b">
       <div className="flex h-16 items-center px-4">
         <div className="md:hidden">
-          <Button variant="ghost" onClick={toggle}>
-            <Bars3Icon className="h-6 w-6" />
+          <Button variant="ghost" onClick={onMenuClick}>
+            <Menu className="h-6 w-6" />
           </Button>
         </div>
         <div className="hidden md:block">
           <div className="relative w-full max-w-sm">
-            <MagnifyingGlassIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search..."
@@ -58,12 +62,12 @@ export function Navbar() {
             className="rounded-full"
             aria-label="Notifications"
           >
-            <BellIcon className="h-5 w-5" />
+            <Bell className="h-5 w-5" />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full">
-                <UserCircleIcon className="h-6 w-6" />
+                <UserCircle className="h-6 w-6" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
