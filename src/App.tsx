@@ -17,42 +17,31 @@ import SignIn from "./pages/auth/SignIn";
 import SignUp from "./pages/auth/SignUp";
 import { ThemeProvider } from "./components/theme-provider";
 import { isSupabaseConfigured } from "@/lib/supabase";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@/components/ui/alert-dialog";
+import { useState, useEffect } from "react";
 
 const queryClient = new QueryClient();
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, initialized } = useAuth();
+  const [showSupabaseDialog, setShowSupabaseDialog] = useState(false);
   
-  // If Supabase is not configured, show configuration message
-  if (!isSupabaseConfigured()) {
-    return (
-      <div className="flex h-screen w-full flex-col items-center justify-center p-4">
-        <Alert className="max-w-xl">
-          <AlertTitle className="text-lg font-semibold">Supabase Configuration Required</AlertTitle>
-          <AlertDescription className="mt-2">
-            <div className="mb-2">
-              To use this application, you need to connect to Supabase and configure your environment variables.
-            </div>
-            <div className="mb-4">
-              Please set the following environment variables in your Lovable Supabase integration:
-            </div>
-            <ul className="list-disc pl-6 mt-2 mb-2">
-              <li>VITE_SUPABASE_URL</li>
-              <li>VITE_SUPABASE_ANON_KEY</li>
-            </ul>
-            <div className="flex justify-end">
-              <Button onClick={() => window.location.reload()}>
-                Reload Application
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
+  useEffect(() => {
+    // Only show the dialog if Supabase is not configured and we've initialized auth
+    if (!isSupabaseConfigured() && initialized && !loading) {
+      setShowSupabaseDialog(true);
+    }
+  }, [initialized, loading]);
   
   // Show nothing while checking authentication
   if (!initialized || loading) {
@@ -66,7 +55,36 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/sign-in" />;
   }
   
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      
+      <AlertDialog open={showSupabaseDialog} onOpenChange={setShowSupabaseDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Connect to Supabase?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This application requires Supabase to function. Would you like to connect to Supabase now?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => window.open("https://lovable.dev/docs", "_blank")}>
+              No, I need more info
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                // This will guide the user to the Supabase connection in Lovable
+                alert("Please click on the Supabase icon in the top navigation bar to connect your Supabase project, then reload the page");
+                setShowSupabaseDialog(false);
+              }}
+            >
+              Yes, connect now
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
 };
 
 const App = () => (
