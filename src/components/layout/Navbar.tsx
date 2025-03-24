@@ -1,92 +1,88 @@
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Search, Bell, Menu, User, LogOut } from 'lucide-react';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  MagnifyingGlassIcon,
+  BellIcon,
+  UserCircleIcon,
+  Bars3Icon,
+} from "@heroicons/react/24/outline";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useState } from 'react';
+} from "@/components/ui/dropdown-menu";
+import { useMobileToggle } from "@/hooks/use-mobile";
 
-interface NavbarProps {
-  onMenuClick: () => void;
-}
+export function Navbar() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const { toggle } = useMobileToggle();
 
-export function Navbar({ onMenuClick }: NavbarProps) {
-  const [query, setQuery] = useState('');
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Searching for:', query);
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/sign-in");
   };
 
   return (
-    <div className="flex h-14 items-center border-b bg-white px-4 dark:bg-gray-900">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="mr-2 md:hidden"
-        onClick={onMenuClick}
-      >
-        <Menu className="h-5 w-5" />
-      </Button>
-      
-      <div className="flex items-center gap-2 md:ml-auto">
-        <form 
-          onSubmit={handleSearch}
-          className="relative mr-2 hidden md:block"
-        >
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-          <Input
-            type="search"
-            placeholder="Search..."
-            className="w-[200px] bg-gray-50 pl-8 transition-all focus:w-[280px] dark:bg-gray-800"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </form>
-        
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative transition-all hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
-          <Bell className="h-5 w-5" />
-          <span className="absolute right-1.5 top-1.5 flex h-2 w-2 rounded-full bg-red-500"></span>
-        </Button>
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="transition-all hover:bg-gray-100 dark:hover:bg-gray-800"
-            >
-              <User className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <div className="flex flex-col space-y-1 p-2">
-              <p className="text-sm font-medium">Jane Wambui</p>
-              <p className="text-xs text-gray-500">Administrator</p>
-            </div>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              Profile Settings
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              Preferences
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600">
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+    <div className="border-b">
+      <div className="flex h-16 items-center px-4">
+        <div className="md:hidden">
+          <Button variant="ghost" onClick={toggle}>
+            <Bars3Icon className="h-6 w-6" />
+          </Button>
+        </div>
+        <div className="hidden md:block">
+          <div className="relative w-full max-w-sm">
+            <MagnifyingGlassIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search..."
+              className="w-full bg-background pl-8 md:w-[300px] lg:w-[400px]"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full"
+            aria-label="Notifications"
+          >
+            <BellIcon className="h-5 w-5" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <UserCircleIcon className="h-6 w-6" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              {user && (
+                <DropdownMenuLabel className="font-normal text-sm text-muted-foreground">
+                  {user.email}
+                </DropdownMenuLabel>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/settings")}>
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSignOut}>
+                Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </div>
   );

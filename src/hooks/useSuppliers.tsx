@@ -1,129 +1,178 @@
 
 import { useState, useEffect } from 'react';
 import { Supplier } from '@/types';
-import { mockSuppliers } from '@/utils/mockData';
+import { supabase } from '@/lib/supabase';
 import { generateId } from '@/utils/formatters';
 import { toast } from '@/components/ui/use-toast';
-
-// Use localStorage key constant
-const STORAGE_KEY = 'hostel-suppliers';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export function useSuppliers() {
-  // Initialize with localStorage data or fallback to mock data
-  const [suppliers, setSuppliers] = useState<Supplier[]>(() => {
-    const savedSuppliers = localStorage.getItem(STORAGE_KEY);
-    return savedSuppliers ? JSON.parse(savedSuppliers) : mockSuppliers;
-  });
-  
   const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
 
-  // Save to localStorage whenever suppliers change
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(suppliers));
-  }, [suppliers]);
+  // Fetch suppliers
+  const { data: suppliers = [], isLoading: isLoadingSuppliers } = useQuery({
+    queryKey: ['suppliers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('suppliers')
+        .select('*')
+        .order('name');
+
+      if (error) {
+        throw error;
+      }
+
+      return data.map((supplier) => ({
+        id: supplier.id,
+        name: supplier.name,
+        contactPerson: supplier.contact_person,
+        email: supplier.email,
+        phone: supplier.phone,
+        address: supplier.address,
+        categories: supplier.categories
+      })) as Supplier[];
+    }
+  });
 
   // Add new supplier
-  const addSupplier = (newSupplier: Omit<Supplier, 'id'>) => {
-    setLoading(true);
-    
-    try {
-      // In a real app, this would be an API call
-      setTimeout(() => {
-        const supplierToAdd: Supplier = {
-          ...newSupplier,
-          id: generateId()
-        };
-        
-        setSuppliers(currentSuppliers => {
-          const updatedSuppliers = [...currentSuppliers, supplierToAdd];
-          return updatedSuppliers;
-        });
-        
-        toast({
-          title: 'Supplier added',
-          description: `${supplierToAdd.name} has been added to your suppliers.`,
-        });
-        
-        setLoading(false);
-      }, 500);
-    } catch (error) {
+  const addSupplierMutation = useMutation({
+    mutationFn: async (newSupplier: Omit<Supplier, 'id'>) => {
+      const id = generateId();
+      
+      const { data, error } = await supabase
+        .from('suppliers')
+        .insert({
+          id,
+          name: newSupplier.name,
+          contact_person: newSupplier.contactPerson,
+          email: newSupplier.email,
+          phone: newSupplier.phone,
+          address: newSupplier.address,
+          categories: newSupplier.categories
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      return {
+        id: data.id,
+        name: data.name,
+        contactPerson: data.contact_person,
+        email: data.email,
+        phone: data.phone,
+        address: data.address,
+        categories: data.categories
+      } as Supplier;
+    },
+    onSuccess: (newSupplier) => {
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      toast({
+        title: 'Supplier added',
+        description: `${newSupplier.name} has been added to your suppliers.`,
+      });
+    },
+    onError: (error: any) => {
       console.error('Error adding supplier:', error);
       toast({
         title: 'Error',
-        description: 'Failed to add supplier. Please try again.',
+        description: error.message || 'Failed to add supplier. Please try again.',
         variant: 'destructive'
       });
-      setLoading(false);
     }
-  };
+  });
 
   // Update existing supplier
-  const updateSupplier = (id: string, updatedData: Partial<Supplier>) => {
-    setLoading(true);
-    
-    try {
-      // In a real app, this would be an API call
-      setTimeout(() => {
-        setSuppliers(currentSuppliers => 
-          currentSuppliers.map(supplier => 
-            supplier.id === id 
-              ? { ...supplier, ...updatedData } 
-              : supplier
-          )
-        );
-        
-        toast({
-          title: 'Supplier updated',
-          description: 'Supplier has been updated successfully.',
-        });
-        
-        setLoading(false);
-      }, 500);
-    } catch (error) {
+  const updateSupplierMutation = useMutation({
+    mutationFn: async ({ id, updatedData }: { id: string, updatedData: Partial<Supplier> }) => {
+      const { error } = await supabase
+        .from('suppliers')
+        .update({
+          name: updatedData.name,
+          contact_person: updatedData.contactPerson,
+          email: updatedData.email,
+          phone: updatedData.phone,
+          address: updatedData.address,
+          categories: updatedData.categories
+        })
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      return { id, ...updatedData };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      toast({
+        title: 'Supplier updated',
+        description: 'Supplier has been updated successfully.',
+      });
+    },
+    onError: (error: any) => {
       console.error('Error updating supplier:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update supplier. Please try again.',
+        description: error.message || 'Failed to update supplier. Please try again.',
         variant: 'destructive'
       });
-      setLoading(false);
     }
-  };
+  });
 
   // Delete supplier
-  const deleteSupplier = (id: string) => {
-    setLoading(true);
-    
-    try {
-      // In a real app, this would be an API call
-      setTimeout(() => {
-        const supplierToDelete = suppliers.find(supplier => supplier.id === id);
-        
-        setSuppliers(currentSuppliers => currentSuppliers.filter(supplier => supplier.id !== id));
-        
-        if (supplierToDelete) {
-          toast({
-            title: 'Supplier deleted',
-            description: `${supplierToDelete.name} has been removed from your suppliers.`,
-          });
-        }
-        
-        setLoading(false);
-      }, 500);
-    } catch (error) {
+  const deleteSupplierMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('suppliers')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      return id;
+    },
+    onSuccess: (id) => {
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      const supplier = suppliers.find(s => s.id === id);
+      if (supplier) {
+        toast({
+          title: 'Supplier deleted',
+          description: `${supplier.name} has been removed from your suppliers.`,
+        });
+      }
+    },
+    onError: (error: any) => {
       console.error('Error deleting supplier:', error);
       toast({
         title: 'Error',
-        description: 'Failed to delete supplier. Please try again.',
+        description: error.message || 'Failed to delete supplier. Please try again.',
         variant: 'destructive'
       });
-      setLoading(false);
     }
+  });
+
+  // Wrapper functions for mutations
+  const addSupplier = (newSupplier: Omit<Supplier, 'id'>) => {
+    return addSupplierMutation.mutate(newSupplier);
+  };
+
+  const updateSupplier = (id: string, updatedData: Partial<Supplier>) => {
+    return updateSupplierMutation.mutate({ id, updatedData });
+  };
+
+  const deleteSupplier = (id: string) => {
+    return deleteSupplierMutation.mutate(id);
   };
 
   return {
     suppliers,
-    loading,
+    loading: isLoadingSuppliers || addSupplierMutation.isPending || updateSupplierMutation.isPending || deleteSupplierMutation.isPending,
     addSupplier,
     updateSupplier,
     deleteSupplier
