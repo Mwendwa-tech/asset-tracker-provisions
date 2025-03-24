@@ -16,12 +16,43 @@ import NotFound from "./pages/NotFound";
 import SignIn from "./pages/auth/SignIn";
 import SignUp from "./pages/auth/SignUp";
 import { ThemeProvider } from "./components/theme-provider";
+import { isSupabaseConfigured } from "@/lib/supabase";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 const queryClient = new QueryClient();
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, initialized } = useAuth();
+  
+  // If Supabase is not configured, show configuration message
+  if (!isSupabaseConfigured()) {
+    return (
+      <div className="flex h-screen w-full flex-col items-center justify-center p-4">
+        <Alert className="max-w-xl">
+          <AlertTitle className="text-lg font-semibold">Supabase Configuration Required</AlertTitle>
+          <AlertDescription className="mt-2">
+            <p className="mb-2">
+              To use this application, you need to connect to Supabase and configure your environment variables.
+            </p>
+            <p className="mb-4">
+              Please set the following environment variables in your Lovable Supabase integration:
+              <ul className="list-disc pl-6 mt-2 mb-2">
+                <li>VITE_SUPABASE_URL</li>
+                <li>VITE_SUPABASE_ANON_KEY</li>
+              </ul>
+            </p>
+            <div className="flex justify-end">
+              <Button onClick={() => window.location.reload()}>
+                Reload Application
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
   
   // Show nothing while checking authentication
   if (!initialized || loading) {
