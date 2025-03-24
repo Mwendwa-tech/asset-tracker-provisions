@@ -7,15 +7,27 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Lock, Mail, User } from 'lucide-react';
+import { isSupabaseConfigured } from '@/lib/supabase';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function SignUp() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [showSupabaseDialog, setShowSupabaseDialog] = useState(!isSupabaseConfigured());
   const { signUp, loading, user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if Supabase is configured before attempting signup
+    if (!isSupabaseConfigured()) {
+      setShowSupabaseDialog(true);
+      return;
+    }
+    
     try {
       await signUp(email, password, name);
     } catch (error) {
@@ -37,6 +49,15 @@ export default function SignUp() {
             Enter your information to create an account
           </CardDescription>
         </CardHeader>
+        {!isSupabaseConfigured() && (
+          <Alert className="mx-6 mb-4" variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Supabase Not Configured</AlertTitle>
+            <AlertDescription>
+              Please connect to Supabase before signing up.
+            </AlertDescription>
+          </Alert>
+        )}
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -51,6 +72,7 @@ export default function SignUp() {
                   onChange={(e) => setName(e.target.value)}
                   className="pl-10"
                   required
+                  disabled={!isSupabaseConfigured()}
                 />
               </div>
             </div>
@@ -66,6 +88,7 @@ export default function SignUp() {
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10"
                   required
+                  disabled={!isSupabaseConfigured()}
                 />
               </div>
             </div>
@@ -82,6 +105,7 @@ export default function SignUp() {
                   className="pl-10"
                   required
                   minLength={6}
+                  disabled={!isSupabaseConfigured()}
                 />
               </div>
               <p className="text-xs text-muted-foreground">Password must be at least 6 characters long</p>
@@ -91,9 +115,9 @@ export default function SignUp() {
             <Button
               type="submit"
               className="w-full"
-              disabled={loading}
+              disabled={loading || !isSupabaseConfigured()}
             >
-              {loading ? 'Creating account...' : 'Create account'}
+              {!isSupabaseConfigured() ? 'Supabase Not Connected' : loading ? 'Creating account...' : 'Create account'}
             </Button>
             <p className="text-center text-sm text-gray-600 dark:text-gray-400">
               Already have an account?{' '}
@@ -104,6 +128,41 @@ export default function SignUp() {
           </CardFooter>
         </form>
       </Card>
+
+      <Dialog open={showSupabaseDialog} onOpenChange={setShowSupabaseDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Supabase Connection Required</DialogTitle>
+            <DialogDescription>
+              This application requires Supabase to function. To sign up, you must first connect to Supabase.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Connection Failed</AlertTitle>
+              <AlertDescription>
+                The app cannot connect to Supabase. Please set up the Supabase integration first.
+              </AlertDescription>
+            </Alert>
+            <ol className="list-decimal pl-5 space-y-2">
+              <li>Click on the Supabase icon in the top navigation bar</li>
+              <li>Connect to your Supabase project or create a new one</li>
+              <li>After connecting, refresh the page</li>
+            </ol>
+          </div>
+          <DialogFooter>
+            <Button 
+              onClick={() => {
+                alert("Please click on the Supabase icon in the top navigation bar to connect your Supabase project, then reload the page");
+                setShowSupabaseDialog(false);
+              }}
+            >
+              Got it
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
