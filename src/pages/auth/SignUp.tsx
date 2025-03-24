@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Navigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -54,7 +54,7 @@ export default function SignUp() {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Supabase Not Configured</AlertTitle>
             <AlertDescription>
-              Please connect to Supabase before signing up.
+              Please connect to Supabase and create a project before signing up.
             </AlertDescription>
           </Alert>
         )}
@@ -132,29 +132,31 @@ export default function SignUp() {
       <Dialog open={showSupabaseDialog} onOpenChange={setShowSupabaseDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Supabase Connection Required</DialogTitle>
+            <DialogTitle>Create a Supabase Project</DialogTitle>
             <DialogDescription>
-              This application requires Supabase to function. To sign up, you must first connect to Supabase.
+              You've connected to your Supabase organization, but you need to create a project to use this application.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Connection Failed</AlertTitle>
+              <AlertTitle>No Supabase Project Found</AlertTitle>
               <AlertDescription>
-                The app cannot connect to Supabase. Please set up the Supabase integration first.
+                Your organization "Mwendwa-tech's Org" doesn't have any projects yet. You need to create one.
               </AlertDescription>
             </Alert>
             <ol className="list-decimal pl-5 space-y-2">
               <li>Click on the Supabase icon in the top navigation bar</li>
-              <li>Connect to your Supabase project or create a new one</li>
+              <li>Select "Create a new project" option</li>
+              <li>Follow the steps to create your project (it's free!)</li>
+              <li>Once created, select your new project</li>
               <li>After connecting, refresh the page</li>
             </ol>
           </div>
           <DialogFooter>
             <Button 
               onClick={() => {
-                alert("Please click on the Supabase icon in the top navigation bar to connect your Supabase project, then reload the page");
+                alert("Please click on the Supabase icon in the top navigation bar to create and connect a Supabase project, then reload the page");
                 setShowSupabaseDialog(false);
               }}
             >
