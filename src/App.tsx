@@ -33,16 +33,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         <Alert className="max-w-xl">
           <AlertTitle className="text-lg font-semibold">Supabase Configuration Required</AlertTitle>
           <AlertDescription className="mt-2">
-            <p className="mb-2">
+            <div className="mb-2">
               To use this application, you need to connect to Supabase and configure your environment variables.
-            </p>
-            <p className="mb-4">
+            </div>
+            <div className="mb-4">
               Please set the following environment variables in your Lovable Supabase integration:
-              <ul className="list-disc pl-6 mt-2 mb-2">
-                <li>VITE_SUPABASE_URL</li>
-                <li>VITE_SUPABASE_ANON_KEY</li>
-              </ul>
-            </p>
+            </div>
+            <ul className="list-disc pl-6 mt-2 mb-2">
+              <li>VITE_SUPABASE_URL</li>
+              <li>VITE_SUPABASE_ANON_KEY</li>
+            </ul>
             <div className="flex justify-end">
               <Button onClick={() => window.location.reload()}>
                 Reload Application
