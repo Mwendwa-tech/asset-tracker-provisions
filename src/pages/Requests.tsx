@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -105,12 +104,10 @@ const Requests = () => {
     if (selectedReceipt) {
       const receiptUrl = generateReceipt(selectedReceipt.id);
       
-      // Create a link element
       const link = document.createElement('a');
       link.href = receiptUrl;
       link.download = `receipt-${selectedReceipt.id}.html`;
       
-      // Trigger the download
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -204,7 +201,7 @@ const Requests = () => {
     },
   ];
 
-  const getRowActions = (request: RequestItem) => {
+  const getActions = (request: RequestItem) => {
     const actions = [];
     
     if (request.status === 'pending') {
@@ -284,7 +281,7 @@ const Requests = () => {
               data={requests}
               columns={requestColumns}
               onRowClick={handleRequestClick}
-              getRowActions={getRowActions}
+              rowActions={getActions}
               searchable
               searchKeys={["itemName", "requestedBy"]}
             />
@@ -295,7 +292,7 @@ const Requests = () => {
               data={requests.filter(r => r.status === 'pending')}
               columns={requestColumns}
               onRowClick={handleRequestClick}
-              getRowActions={getRowActions}
+              rowActions={getActions}
               searchable
               searchKeys={["itemName", "requestedBy"]}
             />
@@ -306,7 +303,7 @@ const Requests = () => {
               data={requests.filter(r => r.status === 'approved')}
               columns={requestColumns}
               onRowClick={handleRequestClick}
-              getRowActions={getRowActions}
+              rowActions={getActions}
               searchable
               searchKeys={["itemName", "requestedBy"]}
             />
@@ -335,7 +332,6 @@ const Requests = () => {
         </Tabs>
       </div>
 
-      {/* Dialog for request details, approval, fulfillment, and receipt */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
