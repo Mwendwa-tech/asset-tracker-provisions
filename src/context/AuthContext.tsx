@@ -1,3 +1,4 @@
+
 import { 
   createContext, 
   useContext, 
@@ -6,7 +7,7 @@ import {
   ReactNode 
 } from 'react';
 import { toast } from '@/components/ui/use-toast';
-import { User, Permission, RolePermissions } from '@/types';
+import { User, Permission, RolePermissions, HotelDepartment } from '@/types';
 
 type Session = {
   user: User;
@@ -17,7 +18,7 @@ type AuthContextType = {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name: string, role?: string, department?: string) => Promise<void>;
+  signUp: (email: string, password: string, name: string, role?: string, department?: HotelDepartment) => Promise<void>;
   signOut: () => Promise<void>;
   initialized: boolean;
   hasPermission: (permission: Permission) => boolean;
@@ -25,6 +26,60 @@ type AuthContextType = {
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const getRoleFromEmail = (email: string): User['role'] => {
+  if (email.startsWith('gm') || email.startsWith('general')) {
+    return 'generalManager';
+  } else if (email.startsWith('head') || email.startsWith('dept')) {
+    return 'departmentHead';
+  } else if (email.startsWith('store') || email.startsWith('inventory')) {
+    return 'storekeeper';
+  } else if (email.startsWith('rooms')) {
+    return 'roomsManager';
+  } else if (email.startsWith('fb') || email.startsWith('food')) {
+    return 'fbManager';
+  } else if (email.startsWith('house') || email.startsWith('cleaning')) {
+    return 'housekeeper';
+  } else if (email.startsWith('front') || email.startsWith('reception')) {
+    return 'frontDesk';
+  } else if (email.startsWith('maint') || email.startsWith('engineer')) {
+    return 'maintenance';
+  } else if (email.startsWith('chef') || email.startsWith('kitchen')) {
+    return 'chef';
+  } else {
+    return 'staff';
+  }
+};
+
+const getDepartmentFromEmail = (email: string): HotelDepartment => {
+  if (email.startsWith('gm') || email.startsWith('general')) {
+    return 'Executive';
+  } else if (email.startsWith('rooms') || email.startsWith('front') || email.startsWith('reception')) {
+    return 'Front Office';
+  } else if (email.startsWith('house') || email.startsWith('cleaning')) {
+    return 'Housekeeping';
+  } else if (email.startsWith('fb') || email.startsWith('food')) {
+    return 'Food & Beverage';
+  } else if (email.startsWith('chef') || email.startsWith('kitchen')) {
+    return 'Kitchen';
+  } else if (email.startsWith('maint') || email.startsWith('engineer')) {
+    return 'Maintenance';
+  } else if (email.startsWith('store') || email.startsWith('inventory')) {
+    return 'Stores';
+  } else if (email.startsWith('hr')) {
+    return 'Human Resources';
+  } else if (email.startsWith('acc') || email.startsWith('finance')) {
+    return 'Accounting';
+  } else if (email.startsWith('spa') || email.startsWith('wellness')) {
+    return 'Spa & Wellness';
+  } else if (email.startsWith('sec') || email.startsWith('guard')) {
+    return 'Security';
+  } else if (email.startsWith('purch') || email.startsWith('buy')) {
+    return 'Purchasing';
+  } else {
+    return 'Front Office'; // Default department
+  }
+};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
@@ -65,24 +120,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       // Mock sign in (no actual backend call)
       setTimeout(() => {
-        // For demo purposes, assign role based on email prefix
-        let role: User['role'] = 'staff';
-        if (email.startsWith('admin')) {
-          role = 'admin';
-        } else if (email.startsWith('manager')) {
-          role = 'manager';
-        } else if (email.startsWith('store')) {
-          role = 'storekeeper';
-        } else if (email.startsWith('head')) {
-          role = 'departmentHead';
-        }
+        // Determine role and department based on email
+        const role = getRoleFromEmail(email);
+        const department = getDepartmentFromEmail(email);
         
         const mockUser: User = { 
           id: 'mock-id', 
           email, 
           name: email.split('@')[0],
           role,
-          department: 'General'
+          department
         };
         
         setUser(mockUser);
@@ -91,7 +138,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         toast({
           title: 'Signed in successfully',
-          description: `Welcome back! You are signed in as ${role}.`
+          description: `Welcome back! You are signed in as ${role} in ${department}.`
         });
       }, 500);
     } catch (error: any) {
@@ -105,7 +152,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signUp = async (email: string, password: string, name: string, role: string = 'staff', department: string = 'General') => {
+  const signUp = async (email: string, password: string, name: string, role: string = 'staff', department: HotelDepartment = 'Front Office') => {
     setLoading(true);
     try {
       // Mock sign up (no actual backend call)

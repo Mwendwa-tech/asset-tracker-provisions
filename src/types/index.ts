@@ -75,14 +75,30 @@ export interface StockTransaction {
   notes?: string;
 }
 
+// Updated user roles to match hotel organization
 export interface User {
   id: string;
   name: string;
-  role: 'admin' | 'manager' | 'storekeeper' | 'departmentHead' | 'staff';
-  department: string;
+  role: 'generalManager' | 'departmentHead' | 'storekeeper' | 'roomsManager' | 'fbManager' | 'housekeeper' | 'frontDesk' | 'maintenance' | 'chef' | 'staff';
+  department: HotelDepartment;
   email: string;
   permissions?: string[];
 }
+
+// Hotel-specific departments
+export type HotelDepartment = 
+  | 'Executive' 
+  | 'Front Office' 
+  | 'Housekeeping' 
+  | 'Food & Beverage' 
+  | 'Kitchen' 
+  | 'Maintenance' 
+  | 'Accounting' 
+  | 'Human Resources' 
+  | 'Purchasing' 
+  | 'Stores' 
+  | 'Security' 
+  | 'Spa & Wellness';
 
 export interface Supplier {
   id: string;
@@ -94,6 +110,7 @@ export interface Supplier {
   categories: string[];
 }
 
+// Updated for hotel-specific request system
 export interface RequestItem {
   id: string;
   itemId: string;
@@ -102,7 +119,9 @@ export interface RequestItem {
   quantity?: number;
   requestedBy: string;
   requestDate: Date;
-  status: 'pending' | 'approved' | 'rejected' | 'fulfilled';
+  status: 'pending' | 'department-approved' | 'approved' | 'rejected' | 'fulfilled';
+  departmentApprovedBy?: string;
+  departmentApprovalDate?: Date;
   approvedBy?: string;
   approvalDate?: Date;
   fulfilledBy?: string;
@@ -110,7 +129,8 @@ export interface RequestItem {
   returnDate?: Date;
   reason: string;
   notes?: string;
-  department?: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  department: HotelDepartment;
 }
 
 export interface Receipt {
@@ -126,15 +146,16 @@ export interface Receipt {
   issuedBy: string;
   issueDate: Date;
   notes?: string;
-  department?: string;
+  department: HotelDepartment;
 }
 
-// Permissions for different actions
+// Permissions for different actions - updated for hotel context
 export enum Permission {
   // Request permissions
   CreateRequest = "create:request",
   ViewRequest = "view:request",
-  ApproveRequest = "approve:request",
+  ApproveRequestDepartment = "approve:request:department",
+  ApproveRequestFinal = "approve:request:final",
   FulfillRequest = "fulfill:request",
   
   // Inventory permissions
@@ -149,20 +170,13 @@ export enum Permission {
   ManageUsers = "manage:users"
 }
 
-// Role-based permissions mapping
+// Role-based permissions mapping for hotel roles
 export const RolePermissions: Record<User['role'], Permission[]> = {
-  admin: Object.values(Permission),
-  manager: [
-    Permission.ViewRequest,
-    Permission.ApproveRequest,
-    Permission.ViewInventory,
-    Permission.ViewAssets,
-    Permission.ManageUsers
-  ],
+  generalManager: Object.values(Permission),
   departmentHead: [
     Permission.CreateRequest,
     Permission.ViewRequest,
-    Permission.ApproveRequest,
+    Permission.ApproveRequestDepartment,
     Permission.ViewInventory,
     Permission.ViewAssets
   ],
@@ -174,10 +188,47 @@ export const RolePermissions: Record<User['role'], Permission[]> = {
     Permission.ViewInventory,
     Permission.ViewAssets
   ],
-  staff: [
+  roomsManager: [
+    Permission.CreateRequest,
+    Permission.ViewRequest,
+    Permission.ApproveRequestDepartment,
+    Permission.ViewInventory,
+    Permission.ViewAssets
+  ],
+  fbManager: [
+    Permission.CreateRequest,
+    Permission.ViewRequest,
+    Permission.ApproveRequestDepartment,
+    Permission.ViewInventory,
+    Permission.ViewAssets
+  ],
+  housekeeper: [
     Permission.CreateRequest,
     Permission.ViewRequest,
     Permission.ViewInventory,
     Permission.ViewAssets
+  ],
+  frontDesk: [
+    Permission.CreateRequest,
+    Permission.ViewRequest,
+    Permission.ViewInventory,
+    Permission.ViewAssets
+  ],
+  maintenance: [
+    Permission.CreateRequest,
+    Permission.ViewRequest,
+    Permission.ViewInventory,
+    Permission.ViewAssets
+  ],
+  chef: [
+    Permission.CreateRequest,
+    Permission.ViewRequest,
+    Permission.ViewInventory,
+    Permission.ViewAssets
+  ],
+  staff: [
+    Permission.CreateRequest,
+    Permission.ViewRequest,
+    Permission.ViewInventory
   ]
 }
