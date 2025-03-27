@@ -1,37 +1,43 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Supplier } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { generateId } from '@/utils/formatters';
 import { toast } from '@/components/ui/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
+// Mock suppliers data
+const mockSuppliers: Supplier[] = [
+  {
+    id: 'sup-1',
+    name: 'Acme Supplies',
+    contactPerson: 'John Doe',
+    email: 'john@acmesupplies.com',
+    phone: '(555) 123-4567',
+    address: '123 Main St, Anytown, USA',
+    categories: ['Office', 'Electronics']
+  },
+  {
+    id: 'sup-2',
+    name: 'Tech Parts Inc',
+    contactPerson: 'Jane Smith',
+    email: 'jane@techparts.com',
+    phone: '(555) 987-6543',
+    address: '456 Tech Blvd, Silicon Valley, CA',
+    categories: ['Hardware', 'Electronics', 'Components']
+  }
+];
+
 export function useSuppliers() {
-  const [loading, setLoading] = useState(false);
   const queryClient = useQueryClient();
 
   // Fetch suppliers
-  const { data: suppliers = [], isLoading: isLoadingSuppliers } = useQuery({
+  const { data: suppliers = mockSuppliers, isLoading: isLoadingSuppliers } = useQuery({
     queryKey: ['suppliers'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('suppliers')
-        .select('*')
-        .order('name');
-
-      if (error) {
-        throw error;
-      }
-
-      return data.map((supplier) => ({
-        id: supplier.id,
-        name: supplier.name,
-        contactPerson: supplier.contact_person,
-        email: supplier.email,
-        phone: supplier.phone,
-        address: supplier.address,
-        categories: supplier.categories
-      })) as Supplier[];
+      // In a real implementation, this would fetch from Supabase
+      // Since we're mocking, just return the mock data
+      return mockSuppliers;
     }
   });
 
@@ -40,35 +46,20 @@ export function useSuppliers() {
     mutationFn: async (newSupplier: Omit<Supplier, 'id'>) => {
       const id = generateId();
       
-      const { data, error } = await supabase
-        .from('suppliers')
-        .insert({
-          id,
-          name: newSupplier.name,
-          contact_person: newSupplier.contactPerson,
-          email: newSupplier.email,
-          phone: newSupplier.phone,
-          address: newSupplier.address,
-          categories: newSupplier.categories
-        })
-        .select()
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      return {
-        id: data.id,
-        name: data.name,
-        contactPerson: data.contact_person,
-        email: data.email,
-        phone: data.phone,
-        address: data.address,
-        categories: data.categories
-      } as Supplier;
+      // Create a new supplier object with the generated ID
+      const supplier: Supplier = {
+        id,
+        ...newSupplier
+      };
+      
+      // In a real implementation, this would save to Supabase
+      // For the mock, just return the newly created supplier
+      return supplier;
     },
     onSuccess: (newSupplier) => {
+      // Add the new supplier to our mock data
+      mockSuppliers.push(newSupplier);
+      
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
       toast({
         title: 'Supplier added',
@@ -88,22 +79,18 @@ export function useSuppliers() {
   // Update existing supplier
   const updateSupplierMutation = useMutation({
     mutationFn: async ({ id, updatedData }: { id: string, updatedData: Partial<Supplier> }) => {
-      const { error } = await supabase
-        .from('suppliers')
-        .update({
-          name: updatedData.name,
-          contact_person: updatedData.contactPerson,
-          email: updatedData.email,
-          phone: updatedData.phone,
-          address: updatedData.address,
-          categories: updatedData.categories
-        })
-        .eq('id', id);
-
-      if (error) {
-        throw error;
+      // Find the supplier in our mock data
+      const index = mockSuppliers.findIndex(s => s.id === id);
+      
+      if (index !== -1) {
+        // Update the supplier in our mock data
+        mockSuppliers[index] = {
+          ...mockSuppliers[index],
+          ...updatedData
+        };
       }
-
+      
+      // Return the updated supplier
       return { id, ...updatedData };
     },
     onSuccess: () => {
@@ -126,15 +113,14 @@ export function useSuppliers() {
   // Delete supplier
   const deleteSupplierMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('suppliers')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        throw error;
+      // Find the supplier in our mock data
+      const index = mockSuppliers.findIndex(s => s.id === id);
+      
+      if (index !== -1) {
+        // Remove the supplier from our mock data
+        mockSuppliers.splice(index, 1);
       }
-
+      
       return id;
     },
     onSuccess: (id) => {
