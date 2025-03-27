@@ -1,4 +1,3 @@
-
 import { 
   createContext, 
   useContext, 
@@ -7,13 +6,7 @@ import {
   ReactNode 
 } from 'react';
 import { toast } from '@/components/ui/use-toast';
-
-// Define mock user and session types
-type User = {
-  id: string;
-  email: string;
-  name?: string;
-};
+import { User, Permission, RolePermissions } from '@/types';
 
 type Session = {
   user: User;
@@ -24,9 +17,11 @@ type AuthContextType = {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name: string) => Promise<void>;
+  signUp: (email: string, password: string, name: string, role?: string, department?: string) => Promise<void>;
   signOut: () => Promise<void>;
   initialized: boolean;
+  hasPermission: (permission: Permission) => boolean;
+  getCurrentUserRole: () => string | null;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -48,19 +43,55 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setInitialized(true);
   }, []);
 
+  const hasPermission = (permission: Permission): boolean => {
+    if (!user) return false;
+    
+    // If the user has custom permissions, check those
+    if (user.permissions && user.permissions.includes(permission)) {
+      return true;
+    }
+    
+    // Otherwise check role-based permissions
+    const rolePermissions = RolePermissions[user.role] || [];
+    return rolePermissions.includes(permission);
+  };
+
+  const getCurrentUserRole = (): string | null => {
+    return user ? user.role : null;
+  };
+
   const signIn = async (email: string, password: string) => {
     setLoading(true);
     try {
       // Mock sign in (no actual backend call)
       setTimeout(() => {
-        const mockUser = { id: 'mock-id', email, name: email.split('@')[0] };
+        // For demo purposes, assign role based on email prefix
+        let role: User['role'] = 'staff';
+        if (email.startsWith('admin')) {
+          role = 'admin';
+        } else if (email.startsWith('manager')) {
+          role = 'manager';
+        } else if (email.startsWith('store')) {
+          role = 'storekeeper';
+        } else if (email.startsWith('head')) {
+          role = 'departmentHead';
+        }
+        
+        const mockUser: User = { 
+          id: 'mock-id', 
+          email, 
+          name: email.split('@')[0],
+          role,
+          department: 'General'
+        };
+        
         setUser(mockUser);
         setSession({ user: mockUser });
         localStorage.setItem('mock_user', JSON.stringify(mockUser));
         
         toast({
           title: 'Signed in successfully',
-          description: `Welcome back!`
+          description: `Welcome back! You are signed in as ${role}.`
         });
       }, 500);
     } catch (error: any) {
@@ -74,12 +105,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signUp = async (email: string, password: string, name: string) => {
+  const signUp = async (email: string, password: string, name: string, role: string = 'staff', department: string = 'General') => {
     setLoading(true);
     try {
       // Mock sign up (no actual backend call)
       setTimeout(() => {
-        const mockUser = { id: 'mock-id', email, name };
+        const mockUser: User = { 
+          id: 'mock-id', 
+          email, 
+          name,
+          role: role as User['role'],
+          department
+        };
+        
         setUser(mockUser);
         setSession({ user: mockUser });
         localStorage.setItem('mock_user', JSON.stringify(mockUser));
@@ -130,7 +168,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signIn, 
       signUp, 
       signOut,
-      initialized 
+      initialized,
+      hasPermission,
+      getCurrentUserRole
     }}>
       {children}
     </AuthContext.Provider>

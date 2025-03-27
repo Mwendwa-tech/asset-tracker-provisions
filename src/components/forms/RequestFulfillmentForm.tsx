@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { RequestItem } from '@/types';
 import { formatDate } from '@/utils/formatters';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/context/AuthContext';
 
 // Define the form schema
 const formSchema = z.object({
@@ -41,10 +42,12 @@ export function RequestFulfillmentForm({
   onCancel,
   loading
 }: RequestFulfillmentFormProps) {
+  const { user } = useAuth();
+  
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      fulfillerName: '',
+      fulfillerName: user?.name || '',
       notes: '',
     },
   });
@@ -81,27 +84,33 @@ export function RequestFulfillmentForm({
               <p className="font-medium">{request.requestedBy}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Request Date</p>
-              <p className="font-medium">{formatDate(request.requestDate)}</p>
+              <p className="text-sm font-medium text-muted-foreground">Department</p>
+              <p className="font-medium">{request.department || 'N/A'}</p>
             </div>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div>
+              <p className="text-sm font-medium text-muted-foreground">Request Date</p>
+              <p className="font-medium">{formatDate(request.requestDate)}</p>
+            </div>
+            <div>
               <p className="text-sm font-medium text-muted-foreground">Status</p>
-              <Badge className="mt-1 bg-green-100 text-green-800">
+              <Badge className="mt-1 bg-blue-100 text-blue-800">
                 {request.status}
               </Badge>
             </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Approved By</p>
               <p className="font-medium">{request.approvedBy}</p>
             </div>
-          </div>
-          
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">Approval Date</p>
-            <p className="font-medium">{request.approvalDate ? formatDate(request.approvalDate) : 'N/A'}</p>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Approval Date</p>
+              <p className="font-medium">{request.approvalDate ? formatDate(request.approvalDate) : 'N/A'}</p>
+            </div>
           </div>
           
           <div>
@@ -115,9 +124,9 @@ export function RequestFulfillmentForm({
           name="fulfillerName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Your Name</FormLabel>
+              <FormLabel>Store Keeper Name</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Enter your full name" />
+                <Input {...field} placeholder="Enter your full name" disabled={!!user?.name} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -152,7 +161,7 @@ export function RequestFulfillmentForm({
             Cancel
           </Button>
           <Button type="submit" disabled={loading}>
-            {loading ? 'Processing...' : 'Fulfill Request'}
+            {loading ? 'Processing...' : 'Issue Items'}
           </Button>
         </div>
       </form>

@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { RequestItem } from '@/types';
 import { formatDate } from '@/utils/formatters';
+import { useAuth } from '@/context/AuthContext';
 
 // Define the form schema
 const formSchema = z.object({
@@ -42,10 +43,12 @@ export function RequestApprovalForm({
   onCancel,
   loading
 }: RequestApprovalFormProps) {
+  const { user } = useAuth();
+  
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      approverName: '',
+      approverName: user?.name || '',
       notes: '',
     },
   });
@@ -93,8 +96,19 @@ export function RequestApprovalForm({
               <p className="font-medium">{request.requestedBy}</p>
             </div>
             <div>
+              <p className="text-sm font-medium text-muted-foreground">Department</p>
+              <p className="font-medium">{request.department || 'N/A'}</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
               <p className="text-sm font-medium text-muted-foreground">Date</p>
               <p className="font-medium">{formatDate(request.requestDate)}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Status</p>
+              <p className="font-medium capitalize">{request.status}</p>
             </div>
           </div>
           
@@ -111,7 +125,7 @@ export function RequestApprovalForm({
             <FormItem>
               <FormLabel>Your Name</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Enter your full name" />
+                <Input {...field} placeholder="Enter your full name" disabled={!!user?.name} />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -1,12 +1,13 @@
 
 import { useState, useEffect } from 'react';
-import { RequestItem, Receipt } from '@/types';
+import { RequestItem, Receipt, Permission } from '@/types';
 import { generateId } from '@/utils/formatters';
 import { toast } from '@/components/ui/use-toast';
 import { useInventory } from './useInventory';
 import { useAssets } from './useAssets';
+import { useAuth } from '@/context/AuthContext';
 
-// Mock data for requests
+// Mock data for requests with department added for hotel context
 const mockRequests: RequestItem[] = [
   {
     id: 'req-1',
@@ -17,7 +18,8 @@ const mockRequests: RequestItem[] = [
     requestedBy: 'John Doe',
     requestDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
     status: 'pending',
-    reason: 'Weekly cleaning supplies needed'
+    reason: 'Weekly cleaning supplies needed',
+    department: 'Housekeeping'
   },
   {
     id: 'req-2',
@@ -29,7 +31,8 @@ const mockRequests: RequestItem[] = [
     status: 'approved',
     approvedBy: 'Admin User',
     approvalDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    reason: 'New employee onboarding'
+    reason: 'New employee onboarding',
+    department: 'Front Desk'
   },
   {
     id: 'req-3',
@@ -44,11 +47,12 @@ const mockRequests: RequestItem[] = [
     approvalDate: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000),
     fulfilledBy: 'Store Keeper',
     fulfillmentDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
-    reason: 'Monthly resupply'
+    reason: 'Monthly resupply',
+    department: 'Administration'
   }
 ];
 
-// Mock receipts
+// Mock receipts with department added
 const mockReceipts: Receipt[] = [
   {
     id: 'receipt-1',
@@ -63,7 +67,8 @@ const mockReceipts: Receipt[] = [
     requestedBy: 'Bob Johnson',
     approvedBy: 'Admin User',
     issuedBy: 'Store Keeper',
-    issueDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
+    issueDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+    department: 'Administration'
   }
 ];
 
@@ -89,6 +94,7 @@ export function useRequests() {
   
   const { items: inventoryItems, addTransaction } = useInventory();
   const { assets, checkOutAsset } = useAssets();
+  const { user, hasPermission } = useAuth();
 
   // Save to localStorage whenever data changes
   useEffect(() => {
@@ -106,13 +112,26 @@ export function useRequests() {
     setLoading(true);
     
     try {
+      // Check if user has permission to create requests
+      if (user && !hasPermission(Permission.CreateRequest)) {
+        toast({
+          title: 'Permission Denied',
+          description: 'You do not have permission to create requests.',
+          variant: 'destructive'
+        });
+        setLoading(false);
+        return null;
+      }
+      
       // Simulate API call
       setTimeout(() => {
         const newRequest: RequestItem = {
           ...request,
           id: generateId(),
           requestDate: new Date(),
-          status: 'pending'
+          status: 'pending',
+          // Add department from user if available
+          department: user?.department || request.department
         };
         
         setRequests(current => [newRequest, ...current]);
@@ -142,6 +161,17 @@ export function useRequests() {
     setLoading(true);
     
     try {
+      // Check if user has permission to approve requests
+      if (user && !hasPermission(Permission.ApproveRequest)) {
+        toast({
+          title: 'Permission Denied',
+          description: 'You do not have permission to approve requests.',
+          variant: 'destructive'
+        });
+        setLoading(false);
+        return;
+      }
+      
       // Simulate API call
       setTimeout(() => {
         setRequests(current => 
@@ -180,6 +210,17 @@ export function useRequests() {
     setLoading(true);
     
     try {
+      // Check if user has permission to approve/reject requests
+      if (user && !hasPermission(Permission.ApproveRequest)) {
+        toast({
+          title: 'Permission Denied',
+          description: 'You do not have permission to reject requests.',
+          variant: 'destructive'
+        });
+        setLoading(false);
+        return;
+      }
+      
       // Simulate API call
       setTimeout(() => {
         setRequests(current => 
@@ -219,6 +260,17 @@ export function useRequests() {
     setLoading(true);
     
     try {
+      // Check if user has permission to fulfill requests
+      if (user && !hasPermission(Permission.FulfillRequest)) {
+        toast({
+          title: 'Permission Denied',
+          description: 'You do not have permission to fulfill requests.',
+          variant: 'destructive'
+        });
+        setLoading(false);
+        return null;
+      }
+      
       // Simulate API call
       setTimeout(() => {
         const requestToFulfill = requests.find(req => req.id === id);
@@ -276,21 +328,28 @@ export function useRequests() {
         );
         
         // Generate receipt
+        const requestToReceipt = requests.find(req => req.id === id);
+        
+        if (!requestToReceipt) {
+          throw new Error('Request not found');
+        }
+        
         const newReceipt: Receipt = {
           id: generateId(),
           requestId: id,
           items: [
             {
-              name: requestToFulfill.itemName,
-              quantity: requestToFulfill.quantity,
-              type: requestToFulfill.itemType
+              name: requestToReceipt.itemName,
+              quantity: requestToReceipt.quantity,
+              type: requestToReceipt.itemType
             }
           ],
-          requestedBy: requestToFulfill.requestedBy,
-          approvedBy: requestToFulfill.approvedBy || 'Unknown',
+          requestedBy: requestToReceipt.requestedBy,
+          approvedBy: requestToReceipt.approvedBy || 'Unknown',
           issuedBy: fulfillerName,
           issueDate: new Date(),
-          notes: notes
+          notes: notes,
+          department: requestToReceipt.department
         };
         
         setReceipts(current => [newReceipt, ...current]);
@@ -329,22 +388,31 @@ export function useRequests() {
           <style>
             body { font-family: Arial, sans-serif; margin: 40px; }
             .header { text-align: center; margin-bottom: 30px; }
+            .logo { text-align: center; margin-bottom: 20px; font-size: 24px; font-weight: bold; }
+            .hotel-name { font-size: 28px; margin-bottom: 5px; }
             .details { margin: 20px 0; }
             table { width: 100%; border-collapse: collapse; }
             th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
             th { background-color: #f2f2f2; }
             .footer { margin-top: 50px; text-align: center; }
+            .signatures { display: flex; justify-content: space-between; margin-top: 100px; }
+            .signature { width: 200px; text-align: center; }
+            .signature-line { border-top: 1px solid #000; margin-bottom: 10px; }
           </style>
         </head>
         <body>
           <div class="header">
-            <h1>Issue Receipt</h1>
+            <div class="logo">GRAND LUXURY HOTEL</div>
+            <div class="hotel-name">Five Star Elegance</div>
+            <p>123 Luxury Avenue, Prestige City</p>
+            <h1>Inventory Issue Receipt</h1>
             <p>Receipt #: ${receipt.id}</p>
             <p>Date: ${new Date(receipt.issueDate).toLocaleDateString()}</p>
           </div>
           
           <div class="details">
             <p><strong>Requested By:</strong> ${receipt.requestedBy}</p>
+            <p><strong>Department:</strong> ${receipt.department || 'N/A'}</p>
             <p><strong>Approved By:</strong> ${receipt.approvedBy}</p>
             <p><strong>Issued By:</strong> ${receipt.issuedBy}</p>
           </div>
@@ -370,8 +438,24 @@ export function useRequests() {
           
           ${receipt.notes ? `<p><strong>Notes:</strong> ${receipt.notes}</p>` : ''}
           
+          <div class="signatures">
+            <div class="signature">
+              <div class="signature-line"></div>
+              <p>Requester Signature</p>
+            </div>
+            <div class="signature">
+              <div class="signature-line"></div>
+              <p>Store Keeper Signature</p>
+            </div>
+            <div class="signature">
+              <div class="signature-line"></div>
+              <p>Authorized Signature</p>
+            </div>
+          </div>
+          
           <div class="footer">
-            <p>This is an automatically generated receipt.</p>
+            <p>This is an official receipt of Grand Luxury Hotel.</p>
+            <p>For any inquiries, please contact the Inventory Department at inventory@grandluxury.hotel</p>
           </div>
         </body>
       </html>

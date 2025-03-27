@@ -1,3 +1,4 @@
+
 export interface InventoryItem {
   id: string;
   name: string;
@@ -77,9 +78,10 @@ export interface StockTransaction {
 export interface User {
   id: string;
   name: string;
-  role: 'admin' | 'manager' | 'staff';
+  role: 'admin' | 'manager' | 'storekeeper' | 'departmentHead' | 'staff';
   department: string;
   email: string;
+  permissions?: string[];
 }
 
 export interface Supplier {
@@ -108,6 +110,7 @@ export interface RequestItem {
   returnDate?: Date;
   reason: string;
   notes?: string;
+  department?: string;
 }
 
 export interface Receipt {
@@ -123,4 +126,58 @@ export interface Receipt {
   issuedBy: string;
   issueDate: Date;
   notes?: string;
+  department?: string;
+}
+
+// Permissions for different actions
+export enum Permission {
+  // Request permissions
+  CreateRequest = "create:request",
+  ViewRequest = "view:request",
+  ApproveRequest = "approve:request",
+  FulfillRequest = "fulfill:request",
+  
+  // Inventory permissions
+  ManageInventory = "manage:inventory",
+  ViewInventory = "view:inventory",
+  
+  // Asset permissions
+  ManageAssets = "manage:assets",
+  ViewAssets = "view:assets",
+  
+  // User management
+  ManageUsers = "manage:users"
+}
+
+// Role-based permissions mapping
+export const RolePermissions: Record<User['role'], Permission[]> = {
+  admin: Object.values(Permission),
+  manager: [
+    Permission.ViewRequest,
+    Permission.ApproveRequest,
+    Permission.ViewInventory,
+    Permission.ViewAssets,
+    Permission.ManageUsers
+  ],
+  departmentHead: [
+    Permission.CreateRequest,
+    Permission.ViewRequest,
+    Permission.ApproveRequest,
+    Permission.ViewInventory,
+    Permission.ViewAssets
+  ],
+  storekeeper: [
+    Permission.ViewRequest,
+    Permission.FulfillRequest,
+    Permission.ManageInventory,
+    Permission.ManageAssets,
+    Permission.ViewInventory,
+    Permission.ViewAssets
+  ],
+  staff: [
+    Permission.CreateRequest,
+    Permission.ViewRequest,
+    Permission.ViewInventory,
+    Permission.ViewAssets
+  ]
 }

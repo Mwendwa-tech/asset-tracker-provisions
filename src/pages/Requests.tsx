@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/common/PageHeader';
 import { DataTable } from '@/components/ui/DataTable';
@@ -8,10 +8,11 @@ import {
   FileText,
   AlertCircle,
   Store,
-  ArrowDown
+  ArrowDown,
+  ShieldAlert
 } from 'lucide-react';
 import { useRequests } from '@/hooks/useRequests';
-import { RequestItem, Receipt } from '@/types';
+import { RequestItem, Receipt, Permission } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { formatDate } from '@/utils/formatters';
 import {
@@ -25,6 +26,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RequestApprovalForm } from '@/components/forms/RequestApprovalForm';
 import { RequestFulfillmentForm } from '@/components/forms/RequestFulfillmentForm';
 import { ReceiptViewer } from '@/components/ui/ReceiptViewer';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from '@/components/ui/use-toast';
 
 const Requests = () => {
   const { 
@@ -37,10 +40,27 @@ const Requests = () => {
     generateReceipt
   } = useRequests();
 
+  const { user, hasPermission } = useAuth();
+  
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<RequestItem | null>(null);
   const [selectedReceipt, setSelectedReceipt] = useState<Receipt | null>(null);
   const [dialogMode, setDialogMode] = useState<'view' | 'approve' | 'fulfill' | 'receipt'>('view');
+
+  const filteredRequests = requests.filter(request => {
+    if (!user) return false;
+    
+    if (hasPermission(Permission.ApproveRequest)) {
+      return true;
+    }
+    
+    if (user.role === 'storekeeper' && request.status === 'approved') {
+      return true;
+    }
+    
+    return request.requestedBy === user.name || 
+           (request.department && request.department === user.department);
+  });
 
   const handleRequestClick = (request: RequestItem) => {
     setSelectedRequest(request);
@@ -55,18 +75,45 @@ const Requests = () => {
   };
 
   const handleApproveClick = (request: RequestItem) => {
+    if (!hasPermission(Permission.ApproveRequest)) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to approve requests.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setSelectedRequest(request);
     setDialogMode('approve');
     setDialogOpen(true);
   };
 
   const handleFulfillClick = (request: RequestItem) => {
+    if (!hasPermission(Permission.FulfillRequest)) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to fulfill requests.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setSelectedRequest(request);
     setDialogMode('fulfill');
     setDialogOpen(true);
   };
 
   const handleApproveRequest = (approverName: string) => {
+    if (!hasPermission(Permission.ApproveRequest)) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to approve requests.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (selectedRequest) {
       approveRequest(selectedRequest.id, approverName);
       setDialogOpen(false);
@@ -74,6 +121,15 @@ const Requests = () => {
   };
 
   const handleRejectRequest = (approverName: string, reason: string) => {
+    if (!hasPermission(Permission.ApproveRequest)) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to reject requests.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (selectedRequest) {
       rejectRequest(selectedRequest.id, approverName, reason);
       setDialogOpen(false);
@@ -81,6 +137,15 @@ const Requests = () => {
   };
 
   const handleFulfillRequest = (fulfillerName: string, notes?: string) => {
+    if (!hasPermission(Permission.FulfillRequest)) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to fulfill requests.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (selectedRequest) {
       fulfillRequest(selectedRequest.id, fulfillerName, notes);
       setDialogOpen(false);
@@ -224,14 +289,15 @@ const Requests = () => {
   }[] = [];
 
   const getActionsForRequest = (request: RequestItem) => {
-    switch (request.status) {
-      case 'pending':
-        return pendingActions;
-      case 'approved':
-        return approvedActions;
-      default:
-        return noActions;
+    if (request.status === 'pending' && hasPermission(Permission.ApproveRequest)) {
+      return pendingActions;
     }
+    
+    if (request.status === 'approved' && hasPermission(Permission.FulfillRequest)) {
+      return approvedActions;
+    }
+    
+    return noActions;
   };
 
   const receiptRowActions = [
@@ -270,6 +336,27 @@ const Requests = () => {
     }
   };
 
+  if (!user || (!hasPermission(Permission.ViewRequest) && !hasPermission(Permission.ApproveRequest) && !hasPermission(Permission.FulfillRequest))) {
+    return (
+      <MainLayout>
+        <div className="animate-fade-in">
+          <PageHeader
+            title="Request Management"
+            description="Process and manage item and asset requests"
+          />
+          
+          <div className="flex flex-col items-center justify-center py-12">
+            <ShieldAlert className="h-16 w-16 text-red-500 mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
+            <p className="text-muted-foreground text-center max-w-md">
+              You don't have permission to view this page. Please contact your administrator if you believe this is an error.
+            </p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       <div className="animate-fade-in">
@@ -289,7 +376,7 @@ const Requests = () => {
           
           <TabsContent value="all" className="space-y-4">
             <DataTable
-              data={requests}
+              data={filteredRequests}
               columns={requestColumns}
               onRowClick={handleRequestClick}
               rowActions={(request) => getActionsForRequest(request)}
@@ -300,10 +387,10 @@ const Requests = () => {
           
           <TabsContent value="pending" className="space-y-4">
             <DataTable
-              data={requests.filter(r => r.status === 'pending')}
+              data={filteredRequests.filter(r => r.status === 'pending')}
               columns={requestColumns}
               onRowClick={handleRequestClick}
-              rowActions={pendingActions}
+              rowActions={hasPermission(Permission.ApproveRequest) ? pendingActions : []}
               searchable
               searchKeys={["itemName", "requestedBy"]}
             />
@@ -311,10 +398,10 @@ const Requests = () => {
           
           <TabsContent value="approved" className="space-y-4">
             <DataTable
-              data={requests.filter(r => r.status === 'approved')}
+              data={filteredRequests.filter(r => r.status === 'approved')}
               columns={requestColumns}
               onRowClick={handleRequestClick}
-              rowActions={approvedActions}
+              rowActions={hasPermission(Permission.FulfillRequest) ? approvedActions : []}
               searchable
               searchKeys={["itemName", "requestedBy"]}
             />
@@ -322,7 +409,7 @@ const Requests = () => {
           
           <TabsContent value="fulfilled" className="space-y-4">
             <DataTable
-              data={requests.filter(r => r.status === 'fulfilled')}
+              data={filteredRequests.filter(r => r.status === 'fulfilled')}
               columns={requestColumns}
               onRowClick={handleRequestClick}
               searchable
@@ -433,7 +520,7 @@ const Requests = () => {
               </div>
               
               <div className="flex justify-end space-x-2">
-                {selectedRequest.status === 'pending' && (
+                {selectedRequest.status === 'pending' && hasPermission(Permission.ApproveRequest) && (
                   <Button 
                     onClick={() => handleApproveClick(selectedRequest)}
                     className="flex items-center gap-2"
@@ -443,7 +530,7 @@ const Requests = () => {
                   </Button>
                 )}
                 
-                {selectedRequest.status === 'approved' && (
+                {selectedRequest.status === 'approved' && hasPermission(Permission.FulfillRequest) && (
                   <Button 
                     onClick={() => handleFulfillClick(selectedRequest)}
                     className="flex items-center gap-2"
