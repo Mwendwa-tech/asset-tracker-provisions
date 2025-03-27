@@ -75,7 +75,7 @@ const Requests = () => {
   };
 
   const handleApproveClick = (request: RequestItem) => {
-    if (!hasPermission(Permission.ApproveRequest)) {
+    if (!hasPermission(Permission.ApproveRequestFinal)) {
       toast({
         title: "Access Denied",
         description: "You don't have permission to approve requests.",
@@ -105,7 +105,7 @@ const Requests = () => {
   };
 
   const handleApproveRequest = (approverName: string) => {
-    if (!hasPermission(Permission.ApproveRequest)) {
+    if (!hasPermission(Permission.ApproveRequestFinal)) {
       toast({
         title: "Access Denied",
         description: "You don't have permission to approve requests.",
@@ -121,7 +121,7 @@ const Requests = () => {
   };
 
   const handleRejectRequest = (approverName: string, reason: string) => {
-    if (!hasPermission(Permission.ApproveRequest)) {
+    if (!hasPermission(Permission.ApproveRequestFinal)) {
       toast({
         title: "Access Denied",
         description: "You don't have permission to reject requests.",
@@ -289,7 +289,7 @@ const Requests = () => {
   }[] = [];
 
   const getActionsForRequest = (request: RequestItem) => {
-    if (request.status === 'pending' && hasPermission(Permission.ApproveRequest)) {
+    if (request.status === 'pending' && hasPermission(Permission.ApproveRequestFinal)) {
       return pendingActions;
     }
     
@@ -336,7 +336,7 @@ const Requests = () => {
     }
   };
 
-  if (!user || (!hasPermission(Permission.ViewRequest) && !hasPermission(Permission.ApproveRequest) && !hasPermission(Permission.FulfillRequest))) {
+  if (!user || (!hasPermission(Permission.ViewRequest) && !hasPermission(Permission.ApproveRequestFinal) && !hasPermission(Permission.FulfillRequest))) {
     return (
       <MainLayout>
         <div className="animate-fade-in">
@@ -390,7 +390,7 @@ const Requests = () => {
               data={filteredRequests.filter(r => r.status === 'pending')}
               columns={requestColumns}
               onRowClick={handleRequestClick}
-              rowActions={hasPermission(Permission.ApproveRequest) ? pendingActions : []}
+              rowActions={hasPermission(Permission.ApproveRequestFinal) ? pendingActions : []}
               searchable
               searchKeys={["itemName", "requestedBy"]}
             />
@@ -520,7 +520,7 @@ const Requests = () => {
               </div>
               
               <div className="flex justify-end space-x-2">
-                {selectedRequest.status === 'pending' && hasPermission(Permission.ApproveRequest) && (
+                {selectedRequest.status === 'pending' && hasPermission(Permission.ApproveRequestFinal) && (
                   <Button 
                     onClick={() => handleApproveClick(selectedRequest)}
                     className="flex items-center gap-2"

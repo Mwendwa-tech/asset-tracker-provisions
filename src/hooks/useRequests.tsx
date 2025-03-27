@@ -19,7 +19,8 @@ const mockRequests: RequestItem[] = [
     requestDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
     status: 'pending',
     reason: 'Weekly cleaning supplies needed',
-    department: 'Housekeeping'
+    department: 'Housekeeping',
+    priority: 'medium'
   },
   {
     id: 'req-2',
@@ -32,7 +33,8 @@ const mockRequests: RequestItem[] = [
     approvedBy: 'Admin User',
     approvalDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
     reason: 'New employee onboarding',
-    department: 'Front Desk'
+    department: 'Front Office',
+    priority: 'high'
   },
   {
     id: 'req-3',
@@ -48,7 +50,8 @@ const mockRequests: RequestItem[] = [
     fulfilledBy: 'Store Keeper',
     fulfillmentDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
     reason: 'Monthly resupply',
-    department: 'Administration'
+    department: 'Executive',
+    priority: 'low'
   }
 ];
 
@@ -68,7 +71,7 @@ const mockReceipts: Receipt[] = [
     approvedBy: 'Admin User',
     issuedBy: 'Store Keeper',
     issueDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
-    department: 'Administration'
+    department: 'Executive'
   }
 ];
 
@@ -131,7 +134,8 @@ export function useRequests() {
           requestDate: new Date(),
           status: 'pending',
           // Add department from user if available
-          department: user?.department || request.department
+          department: user?.department || request.department,
+          priority: request.priority || 'medium' // Default to medium priority if not provided
         };
         
         setRequests(current => [newRequest, ...current]);
@@ -162,7 +166,7 @@ export function useRequests() {
     
     try {
       // Check if user has permission to approve requests
-      if (user && !hasPermission(Permission.ApproveRequest)) {
+      if (user && !hasPermission(Permission.ApproveRequestFinal)) {
         toast({
           title: 'Permission Denied',
           description: 'You do not have permission to approve requests.',
@@ -211,7 +215,7 @@ export function useRequests() {
     
     try {
       // Check if user has permission to approve/reject requests
-      if (user && !hasPermission(Permission.ApproveRequest)) {
+      if (user && !hasPermission(Permission.ApproveRequestFinal)) {
         toast({
           title: 'Permission Denied',
           description: 'You do not have permission to reject requests.',

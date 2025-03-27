@@ -4,8 +4,8 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/common/PageHeader';
 import { DataTable } from '@/components/ui/DataTable';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Trash, Mail, User, Shield } from 'lucide-react';
-import { User as UserType, Permission, HotelDepartment } from '@/types';
+import { Plus, Edit, Trash, Mail, User as UserIcon, Shield } from 'lucide-react';
+import { User as UserType, Permission, HotelDepartment, RolePermissions } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -160,7 +160,7 @@ const Users = () => {
       cell: (item: UserType) => (
         <div className="flex items-center">
           <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center mr-2">
-            <User className="h-4 w-4 text-gray-600" />
+            <UserIcon className="h-4 w-4 text-gray-600" />
           </div>
           <div className="font-medium">{item.name}</div>
         </div>
@@ -191,12 +191,14 @@ const Users = () => {
     },
     {
       header: "Permissions",
+      accessorKey: "role" as keyof UserType,
       cell: (item: UserType) => (
         <div className="flex items-center">
           <Shield className="h-4 w-4 mr-1" />
           <span>{RolePermissions[item.role].length}</span>
         </div>
       ),
+      sortable: false,
     }
   ];
 

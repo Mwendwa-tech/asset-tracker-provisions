@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -110,7 +109,7 @@ const Inventory = () => {
     }
   };
 
-  const handleRequestSubmit = (data: { quantity?: number; requestedBy: string; reason: string }) => {
+  const handleRequestSubmit = (data: { quantity?: number; requestedBy: string; reason: string; priority: string; department: string }) => {
     if (selectedItem) {
       createRequest({
         itemId: selectedItem.id,
@@ -118,7 +117,9 @@ const Inventory = () => {
         itemName: selectedItem.name,
         quantity: data.quantity,
         requestedBy: data.requestedBy,
-        reason: data.reason
+        reason: data.reason,
+        priority: data.priority as 'low' | 'medium' | 'high' | 'urgent',
+        department: data.department as HotelDepartment
       });
       setDialogOpen(false);
     }
