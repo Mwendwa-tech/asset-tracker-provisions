@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -85,9 +86,13 @@ export function RequestForm({
     'Spa & Wellness',
   ];
 
+  const handleSubmit = (values: FormValues) => {
+    onSubmit(values);
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <div className="mb-4">
           <p className="text-sm font-medium text-muted-foreground mb-1">Item</p>
           <p className="font-medium">{item.name}</p>

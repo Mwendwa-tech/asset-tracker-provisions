@@ -336,6 +336,8 @@ const Requests = () => {
     }
   };
 
+  const canManageRequests = hasPermission(Permission.ApproveRequestFinal) || user?.role === 'departmentHead';
+
   if (!user || (!hasPermission(Permission.ViewRequest) && !hasPermission(Permission.ApproveRequestFinal) && !hasPermission(Permission.FulfillRequest))) {
     return (
       <MainLayout>
@@ -520,13 +522,15 @@ const Requests = () => {
               </div>
               
               <div className="flex justify-end space-x-2">
-                {selectedRequest.status === 'pending' && hasPermission(Permission.ApproveRequestFinal) && (
-                  <Button 
-                    onClick={() => handleApproveClick(selectedRequest)}
-                    className="flex items-center gap-2"
+                {selectedRequest.status === 'pending' && canManageRequests && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!hasPermission(Permission.ApproveRequestFinal) && user?.role !== 'departmentHead'}
+                    onClick={() => handleApproveRequest(request)}
                   >
-                    <CheckCircle className="h-4 w-4" />
-                    Approve/Reject
+                    <Check className="h-4 w-4 mr-1" />
+                    Approve
                   </Button>
                 )}
                 

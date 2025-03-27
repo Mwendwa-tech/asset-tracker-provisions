@@ -221,11 +221,11 @@ const Users = () => {
       <div className="animate-fade-in">
         <PageHeader
           title="User Management"
-          description="Manage staff accounts and access permissions"
+          description="Manage hotel staff accounts and permissions"
           actions={
             canManageUsers && (
               <Button onClick={() => openDialog()}>
-                <Plus className="mr-2 h-4 w-4" /> Add Staff Member
+                <Plus className="mr-2 h-4 w-4" /> Add User
               </Button>
             )
           }
