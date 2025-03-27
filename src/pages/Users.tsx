@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -232,15 +231,20 @@ const Users = () => {
           }
         />
 
-        <DataTable
-          data={users}
-          columns={userColumns}
-          onRowClick={canManageUsers ? (user) => openDialog(user) : undefined}
-          rowActions={rowActions}
-          searchable
-          searchKeys={["name", "email", "department", "role"]}
-          loading={loading}
-        />
+        {loading ? (
+          <div className="flex justify-center items-center py-10">
+            <p>Loading users...</p>
+          </div>
+        ) : (
+          <DataTable
+            data={users}
+            columns={userColumns}
+            onRowClick={canManageUsers ? (user) => openDialog(user) : undefined}
+            rowActions={rowActions}
+            searchable
+            searchKeys={["name", "email", "department", "role"]}
+          />
+        )}
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="sm:max-w-md">

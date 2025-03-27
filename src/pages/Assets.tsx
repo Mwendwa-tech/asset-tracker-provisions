@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useAssets } from '@/hooks/useAssets';
 import { useRequests } from '@/hooks/useRequests';
-import { Asset, CheckoutHistory } from '@/types';
+import { Asset, CheckoutHistory, HotelDepartment } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { 
   formatCurrency, 
@@ -158,16 +158,16 @@ const Assets = () => {
     }
   };
 
-  const handleRequestSubmit = (data: { requestedBy: string; reason: string; priority: string; department: string }) => {
+  const handleRequestSubmit = (data: { requestedBy?: string; reason?: string; priority?: 'low' | 'medium' | 'high' | 'urgent'; department?: string }) => {
     if (selectedAsset) {
       createRequest({
         itemId: selectedAsset.id,
         itemType: 'asset',
         itemName: selectedAsset.name,
-        requestedBy: data.requestedBy,
-        reason: data.reason,
-        priority: data.priority as 'low' | 'medium' | 'high' | 'urgent',
-        department: data.department as HotelDepartment
+        requestedBy: data.requestedBy || '',
+        reason: data.reason || '',
+        priority: data.priority || 'medium',
+        department: data.department as HotelDepartment || 'Front Office'
       });
       setDialogOpen(false);
     }

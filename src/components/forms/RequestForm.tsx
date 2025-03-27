@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -40,7 +39,13 @@ type FormValues = z.infer<typeof formSchema>;
 interface RequestFormProps {
   item: InventoryItem | Asset;
   itemType: 'inventory' | 'asset';
-  onSubmit: (data: FormValues) => void;
+  onSubmit: (data: {
+    quantity?: number;
+    requestedBy?: string;
+    reason?: string;
+    priority?: 'low' | 'medium' | 'high' | 'urgent';
+    department?: string;
+  }) => void;
   onCancel: () => void;
   loading: boolean;
 }

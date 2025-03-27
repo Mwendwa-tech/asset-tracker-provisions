@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useInventory } from '@/hooks/useInventory';
 import { useRequests } from '@/hooks/useRequests';
-import { InventoryItem, StockTransaction } from '@/types';
+import { InventoryItem, StockTransaction, HotelDepartment } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency, formatDate, getStockLevelClass } from '@/utils/formatters';
 import {
@@ -109,17 +109,17 @@ const Inventory = () => {
     }
   };
 
-  const handleRequestSubmit = (data: { quantity?: number; requestedBy: string; reason: string; priority: string; department: string }) => {
+  const handleRequestSubmit = (data: { quantity?: number; requestedBy?: string; reason?: string; priority?: 'low' | 'medium' | 'high' | 'urgent'; department?: string }) => {
     if (selectedItem) {
       createRequest({
         itemId: selectedItem.id,
         itemType: 'inventory',
         itemName: selectedItem.name,
         quantity: data.quantity,
-        requestedBy: data.requestedBy,
-        reason: data.reason,
-        priority: data.priority as 'low' | 'medium' | 'high' | 'urgent',
-        department: data.department as HotelDepartment
+        requestedBy: data.requestedBy || '',
+        reason: data.reason || '',
+        priority: data.priority || 'medium',
+        department: data.department as HotelDepartment || 'Front Office'
       });
       setDialogOpen(false);
     }

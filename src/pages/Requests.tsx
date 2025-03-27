@@ -50,7 +50,7 @@ const Requests = () => {
   const filteredRequests = requests.filter(request => {
     if (!user) return false;
     
-    if (hasPermission(Permission.ApproveRequest)) {
+    if (hasPermission(Permission.ApproveRequestFinal)) {
       return true;
     }
     
