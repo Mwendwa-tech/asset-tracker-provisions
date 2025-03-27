@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Table,
@@ -41,7 +40,11 @@ interface DataTableProps<T> {
     label: string;
     onClick: (item: T) => void;
     icon?: React.ReactNode;
-  }[];
+  }[] | ((item: T) => {
+    label: string;
+    onClick: (item: T) => void;
+    icon?: React.ReactNode;
+  }[]);
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -57,7 +60,6 @@ export function DataTable<T extends Record<string, any>>({
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState<T[]>(data);
 
-  // Handle sorting
   const handleSort = (column: keyof T) => {
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -67,7 +69,6 @@ export function DataTable<T extends Record<string, any>>({
     }
   };
 
-  // Update filtered data when search query or data changes
   useState(() => {
     if (!searchQuery) {
       setFilteredData(data);
@@ -88,7 +89,6 @@ export function DataTable<T extends Record<string, any>>({
     setFilteredData(filtered);
   });
 
-  // Get sorted data
   const getSortedData = () => {
     if (!sortBy) return filteredData;
     
@@ -103,7 +103,6 @@ export function DataTable<T extends Record<string, any>>({
     });
   };
 
-  // Handle search
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
@@ -127,13 +126,11 @@ export function DataTable<T extends Record<string, any>>({
     setFilteredData(filtered);
   };
 
-  // Clear search
   const clearSearch = () => {
     setSearchQuery("");
     setFilteredData(data);
   };
 
-  // Get sort icon for header
   const getSortIcon = (column: keyof T) => {
     if (sortBy !== column) return <ChevronsUpDown className="ml-1 h-4 w-4" />;
     return sortOrder === 'asc' ? (
@@ -141,6 +138,16 @@ export function DataTable<T extends Record<string, any>>({
     ) : (
       <ChevronDown className="ml-1 h-4 w-4" />
     );
+  };
+
+  const getRowActions = (item: T) => {
+    if (!rowActions) return [];
+    
+    if (typeof rowActions === 'function') {
+      return rowActions(item);
+    }
+    
+    return rowActions;
   };
 
   return (
@@ -215,7 +222,7 @@ export function DataTable<T extends Record<string, any>>({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        {rowActions.map((action, actionIndex) => (
+                        {getRowActions(item).map((action, actionIndex) => (
                           <DropdownMenuItem
                             key={actionIndex}
                             onClick={(e) => {

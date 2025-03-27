@@ -201,26 +201,37 @@ const Requests = () => {
     },
   ];
 
-  const getActions = (request: RequestItem) => {
-    const actions = [];
-    
-    if (request.status === 'pending') {
-      actions.push({
-        label: "Approve/Reject",
-        onClick: () => handleApproveClick(request),
-        icon: <CheckCircle className="h-4 w-4" />,
-      });
+  const pendingActions = [
+    {
+      label: "Approve/Reject",
+      onClick: (request: RequestItem) => handleApproveClick(request),
+      icon: <CheckCircle className="h-4 w-4" />,
+    },
+  ];
+
+  const approvedActions = [
+    {
+      label: "Fulfill",
+      onClick: (request: RequestItem) => handleFulfillClick(request),
+      icon: <Store className="h-4 w-4" />,
+    },
+  ];
+
+  const noActions: {
+    label: string;
+    onClick: (item: RequestItem) => void;
+    icon?: React.ReactNode;
+  }[] = [];
+
+  const getActionsForRequest = (request: RequestItem) => {
+    switch (request.status) {
+      case 'pending':
+        return pendingActions;
+      case 'approved':
+        return approvedActions;
+      default:
+        return noActions;
     }
-    
-    if (request.status === 'approved') {
-      actions.push({
-        label: "Fulfill",
-        onClick: () => handleFulfillClick(request),
-        icon: <Store className="h-4 w-4" />,
-      });
-    }
-    
-    return actions;
   };
 
   const receiptRowActions = [
@@ -281,7 +292,7 @@ const Requests = () => {
               data={requests}
               columns={requestColumns}
               onRowClick={handleRequestClick}
-              rowActions={getActions}
+              rowActions={(request) => getActionsForRequest(request)}
               searchable
               searchKeys={["itemName", "requestedBy"]}
             />
@@ -292,7 +303,7 @@ const Requests = () => {
               data={requests.filter(r => r.status === 'pending')}
               columns={requestColumns}
               onRowClick={handleRequestClick}
-              rowActions={getActions}
+              rowActions={pendingActions}
               searchable
               searchKeys={["itemName", "requestedBy"]}
             />
@@ -303,7 +314,7 @@ const Requests = () => {
               data={requests.filter(r => r.status === 'approved')}
               columns={requestColumns}
               onRowClick={handleRequestClick}
-              rowActions={getActions}
+              rowActions={approvedActions}
               searchable
               searchKeys={["itemName", "requestedBy"]}
             />
