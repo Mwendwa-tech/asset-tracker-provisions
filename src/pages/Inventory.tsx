@@ -10,9 +10,12 @@ import {
   Package, 
   Plus, 
   Trash,
-  ArrowUpDown
+  ArrowUpDown,
+  Store,
+  FileText
 } from 'lucide-react';
 import { useInventory } from '@/hooks/useInventory';
+import { useRequests } from '@/hooks/useRequests';
 import { InventoryItem, StockTransaction } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency, formatDate, getStockLevelClass } from '@/utils/formatters';
@@ -26,22 +29,30 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InventoryForm } from '@/components/forms/InventoryForm';
 import { StockAdjustmentForm } from '@/components/forms/StockAdjustmentForm';
+import { RequestForm } from '@/components/forms/RequestForm';
 
 const Inventory = () => {
   const { 
     items, 
     lowStockAlerts, 
     transactions,
-    loading, 
+    loading: inventoryLoading, 
     addItem, 
     updateItem, 
     deleteItem,
     addTransaction
   } = useInventory();
 
+  const {
+    loading: requestLoading,
+    createRequest
+  } = useRequests();
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
-  const [dialogMode, setDialogMode] = useState<'view' | 'edit' | 'add' | 'adjust'>('view');
+  const [dialogMode, setDialogMode] = useState<'view' | 'edit' | 'add' | 'adjust' | 'request'>('view');
+
+  const loading = inventoryLoading || requestLoading;
 
   const handleRowClick = (item: InventoryItem) => {
     setSelectedItem(item);
@@ -73,6 +84,12 @@ const Inventory = () => {
     setDialogOpen(true);
   };
 
+  const handleRequestItem = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setDialogMode('request');
+    setDialogOpen(true);
+  };
+
   const handleInventoryFormSubmit = (data: Omit<InventoryItem, 'id' | 'lastUpdated'>) => {
     if (selectedItem) {
       updateItem(selectedItem.id, data);
@@ -88,6 +105,20 @@ const Inventory = () => {
         ...data,
         itemId: selectedItem.id,
         itemName: selectedItem.name,
+      });
+      setDialogOpen(false);
+    }
+  };
+
+  const handleRequestSubmit = (data: { quantity?: number; requestedBy: string; reason: string }) => {
+    if (selectedItem) {
+      createRequest({
+        itemId: selectedItem.id,
+        itemType: 'inventory',
+        itemName: selectedItem.name,
+        quantity: data.quantity,
+        requestedBy: data.requestedBy,
+        reason: data.reason
       });
       setDialogOpen(false);
     }
@@ -147,6 +178,11 @@ const Inventory = () => {
       icon: <Edit className="h-4 w-4" />,
     },
     {
+      label: "Request",
+      onClick: handleRequestItem,
+      icon: <Store className="h-4 w-4" />,
+    },
+    {
       label: "Delete",
       onClick: handleDeleteItem,
       icon: <Trash className="h-4 w-4" />,
@@ -161,6 +197,8 @@ const Inventory = () => {
         return 'Edit Item';
       case 'adjust':
         return 'Adjust Stock';
+      case 'request':
+        return 'Request Item';
       default:
         return selectedItem?.name || 'Item Details';
     }
@@ -174,6 +212,8 @@ const Inventory = () => {
         return 'Update inventory item information';
       case 'adjust':
         return 'Add or remove stock from inventory';
+      case 'request':
+        return 'Submit a request for this item';
       default:
         return selectedItem ? `${selectedItem.category} • ${selectedItem.location}` : '';
     }
@@ -360,9 +400,13 @@ const Inventory = () => {
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
                 </Button>
-                <Button onClick={() => handleAdjustStock(selectedItem)}>
+                <Button variant="outline" onClick={() => handleAdjustStock(selectedItem)}>
                   <ArrowUpDown className="mr-2 h-4 w-4" />
                   Adjust Stock
+                </Button>
+                <Button onClick={() => handleRequestItem(selectedItem)}>
+                  <Store className="mr-2 h-4 w-4" />
+                  Request
                 </Button>
               </div>
             </div>
@@ -381,6 +425,16 @@ const Inventory = () => {
             <StockAdjustmentForm 
               item={selectedItem}
               onSubmit={handleStockAdjustmentSubmit}
+              onCancel={() => setDialogOpen(false)}
+              loading={loading}
+            />
+          )}
+          
+          {dialogMode === 'request' && selectedItem && (
+            <RequestForm 
+              item={selectedItem}
+              itemType="inventory"
+              onSubmit={handleRequestSubmit}
               onCancel={() => setDialogOpen(false)}
               loading={loading}
             />

@@ -12,6 +12,7 @@ import Reports from "./pages/Reports";
 import Suppliers from "./pages/Suppliers";
 import Users from "./pages/Users";
 import Settings from "./pages/Settings";
+import Requests from "./pages/Requests";
 import NotFound from "./pages/NotFound";
 import SignIn from "./pages/auth/SignIn";
 import SignUp from "./pages/auth/SignUp";
@@ -62,6 +63,7 @@ const App = () => (
               <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
               <Route path="/suppliers" element={<ProtectedRoute><Suppliers /></ProtectedRoute>} />
               <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
+              <Route path="/requests" element={<ProtectedRoute><Requests /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>

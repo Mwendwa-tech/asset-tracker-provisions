@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -9,9 +10,11 @@ import {
   Plus, 
   Trash, 
   CheckCircle, 
-  AlertCircle 
+  AlertCircle,
+  Store
 } from 'lucide-react';
 import { useAssets } from '@/hooks/useAssets';
+import { useRequests } from '@/hooks/useRequests';
 import { Asset, CheckoutHistory } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -38,13 +41,14 @@ import {
 import { AssetForm } from '@/components/forms/AssetForm';
 import { CheckoutForm } from '@/components/forms/CheckoutForm';
 import { CheckinForm } from '@/components/forms/CheckinForm';
+import { RequestForm } from '@/components/forms/RequestForm';
 import { toast } from '@/components/ui/use-toast';
 
 const Assets = () => {
   const { 
     assets, 
     checkoutHistory,
-    loading, 
+    loading: assetLoading, 
     addAsset,
     updateAsset,
     deleteAsset,
@@ -52,9 +56,16 @@ const Assets = () => {
     checkInAsset
   } = useAssets();
 
+  const {
+    loading: requestLoading,
+    createRequest
+  } = useRequests();
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
-  const [dialogMode, setDialogMode] = useState<'view' | 'edit' | 'add' | 'checkout' | 'checkin'>('view');
+  const [dialogMode, setDialogMode] = useState<'view' | 'edit' | 'add' | 'checkout' | 'checkin' | 'request'>('view');
+
+  const loading = assetLoading || requestLoading;
 
   const handleRowClick = (asset: Asset) => {
     setSelectedAsset(asset);
@@ -110,6 +121,21 @@ const Assets = () => {
     setDialogOpen(true);
   };
 
+  const handleRequestAsset = (asset: Asset) => {
+    if (asset.status !== 'available') {
+      toast({
+        title: "Cannot request",
+        description: `Asset is currently ${asset.status}`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setSelectedAsset(asset);
+    setDialogMode('request');
+    setDialogOpen(true);
+  };
+
   const handleAssetFormSubmit = (data: Omit<Asset, 'id'>) => {
     if (selectedAsset) {
       updateAsset(selectedAsset.id, data);
@@ -129,6 +155,19 @@ const Assets = () => {
   const handleCheckinSubmit = (data: { notes?: string }) => {
     if (selectedAsset) {
       checkInAsset(selectedAsset.id, data.notes);
+      setDialogOpen(false);
+    }
+  };
+
+  const handleRequestSubmit = (data: { requestedBy: string; reason: string }) => {
+    if (selectedAsset) {
+      createRequest({
+        itemId: selectedAsset.id,
+        itemType: 'asset',
+        itemName: selectedAsset.name,
+        requestedBy: data.requestedBy,
+        reason: data.reason
+      });
       setDialogOpen(false);
     }
   };
@@ -201,6 +240,11 @@ const Assets = () => {
       icon: <Edit className="h-4 w-4" />,
     },
     {
+      label: "Request",
+      onClick: handleRequestAsset,
+      icon: <Store className="h-4 w-4" />,
+    },
+    {
       label: "Delete",
       onClick: handleDeleteAsset,
       icon: <Trash className="h-4 w-4" />,
@@ -217,6 +261,8 @@ const Assets = () => {
         return 'Check Out Asset';
       case 'checkin':
         return 'Check In Asset';
+      case 'request':
+        return 'Request Asset';
       default:
         return selectedAsset?.name || 'Asset Details';
     }
@@ -232,6 +278,8 @@ const Assets = () => {
         return 'Assign this asset to a person';
       case 'checkin':
         return 'Return this asset to inventory';
+      case 'request':
+        return 'Submit a request for this asset';
       default:
         return selectedAsset ? `${selectedAsset.category} • ${selectedAsset.location}` : '';
     }
@@ -445,10 +493,16 @@ const Assets = () => {
                 </Button>
                 
                 {selectedAsset.status === 'available' ? (
-                  <Button onClick={() => handleCheckout(selectedAsset)}>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Check Out
-                  </Button>
+                  <>
+                    <Button variant="outline" onClick={() => handleCheckout(selectedAsset)}>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Check Out
+                    </Button>
+                    <Button onClick={() => handleRequestAsset(selectedAsset)}>
+                      <Store className="mr-2 h-4 w-4" />
+                      Request
+                    </Button>
+                  </>
                 ) : selectedAsset.status === 'checked-out' ? (
                   <Button onClick={() => handleCheckin(selectedAsset)}>
                     <CheckCircle className="mr-2 h-4 w-4" />
@@ -481,6 +535,16 @@ const Assets = () => {
             <CheckinForm 
               asset={selectedAsset}
               onSubmit={handleCheckinSubmit}
+              onCancel={() => setDialogOpen(false)}
+              loading={loading}
+            />
+          )}
+          
+          {dialogMode === 'request' && selectedAsset && (
+            <RequestForm 
+              item={selectedAsset}
+              itemType="asset"
+              onSubmit={handleRequestSubmit}
               onCancel={() => setDialogOpen(false)}
               loading={loading}
             />

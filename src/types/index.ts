@@ -1,4 +1,3 @@
-
 export interface InventoryItem {
   id: string;
   name: string;
@@ -91,4 +90,37 @@ export interface Supplier {
   phone: string;
   address: string;
   categories: string[];
+}
+
+export interface RequestItem {
+  id: string;
+  itemId: string;
+  itemType: 'inventory' | 'asset';
+  itemName: string;
+  quantity?: number;
+  requestedBy: string;
+  requestDate: Date;
+  status: 'pending' | 'approved' | 'rejected' | 'fulfilled';
+  approvedBy?: string;
+  approvalDate?: Date;
+  fulfilledBy?: string;
+  fulfillmentDate?: Date;
+  returnDate?: Date;
+  reason: string;
+  notes?: string;
+}
+
+export interface Receipt {
+  id: string;
+  requestId: string;
+  items: {
+    name: string;
+    quantity?: number;
+    type: 'inventory' | 'asset';
+  }[];
+  requestedBy: string;
+  approvedBy: string;
+  issuedBy: string;
+  issueDate: Date;
+  notes?: string;
 }
