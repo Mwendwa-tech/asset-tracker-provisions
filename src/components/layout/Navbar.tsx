@@ -1,15 +1,7 @@
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Search,
-  Bell,
-  UserCircle,
-  Menu,
-} from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
+import React from 'react';
+import { Bell, Menu, Moon, Sun, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,77 +9,84 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useIsMobile } from "@/hooks/use-mobile";
+} from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/components/theme-provider';
+import { NotificationCenter } from '@/components/ui/NotificationCenter';
+import { Link } from 'react-router-dom';
 
 interface NavbarProps {
-  onMenuClick?: () => void;
+  setSidebarOpen: (open: boolean) => void;
 }
 
-export function Navbar({ onMenuClick }: NavbarProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const navigate = useNavigate();
+export const Navbar = ({ setSidebarOpen }: NavbarProps) => {
   const { user, signOut } = useAuth();
-  const isMobile = useIsMobile();
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/sign-in");
-  };
+  const { theme, setTheme } = useTheme();
 
   return (
-    <div className="border-b">
-      <div className="flex h-16 items-center px-4">
-        <div className="md:hidden">
-          <Button variant="ghost" onClick={onMenuClick}>
+    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur">
+      <div className="container flex h-16 items-center">
+        <div className="mr-4 flex md:hidden">
+          <Button variant="outline" size="icon" onClick={() => setSidebarOpen(true)}>
             <Menu className="h-6 w-6" />
+            <span className="sr-only">Open sidebar</span>
           </Button>
         </div>
-        <div className="hidden md:block">
-          <div className="relative w-full max-w-sm">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search..."
-              className="w-full bg-background pl-8 md:w-[300px] lg:w-[400px]"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+        <div className="flex flex-1 items-center justify-between">
+          <Link to="/" className="flex items-center text-xl font-bold">
+            Grand Luxury Hotel
+          </Link>
+          <div className="flex items-center gap-2">
+            {/* Notification Center */}
+            <NotificationCenter />
+            
+            {/* Theme Toggle */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                  <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                  <span className="sr-only">Toggle theme</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setTheme("light")}>
+                  Light
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("dark")}>
+                  Dark
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("system")}>
+                  System
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            {/* User Menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative rounded-full overflow-hidden">
+                  <User className="h-6 w-6" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>
+                  <div className="font-medium">{user?.name || 'User'}</div>
+                  <div className="text-xs text-muted-foreground">{user?.email || ''}</div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/settings">Settings</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => signOut()}>
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
-        <div className="ml-auto flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full"
-            aria-label="Notifications"
-          >
-            <Bell className="h-5 w-5" />
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <UserCircle className="h-6 w-6" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              {user && (
-                <DropdownMenuLabel className="font-normal text-sm text-muted-foreground">
-                  {user.email}
-                </DropdownMenuLabel>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate("/settings")}>
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleSignOut}>
-                Sign out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
       </div>
-    </div>
+    </header>
   );
-}
+};

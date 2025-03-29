@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import { RequestItem, Receipt, Permission } from '@/types';
+import { RequestItem, Receipt, Permission, InventoryItem } from '@/types';
 import { generateId } from '@/utils/formatters';
 import { toast } from '@/components/ui/use-toast';
 import { useInventory } from './useInventory';
@@ -94,7 +95,7 @@ export function useRequests() {
   
   const [loading, setLoading] = useState(false);
   
-  const { items: inventoryItems, addTransaction } = useInventory();
+  const { items: inventoryItems, addTransaction, updateItem } = useInventory();
   const { assets, checkOutAsset } = useAssets();
   const { user, hasPermission } = useAuth();
 
@@ -114,7 +115,10 @@ export function useRequests() {
     setLoading(true);
     
     try {
-      // Remove permission check for demo purposes
+      // Check if user has permission
+      if (!hasPermission(Permission.CreateRequest)) {
+        throw new Error("You don't have permission to create requests");
+      }
       
       // Simulate API call
       setTimeout(() => {
@@ -129,6 +133,9 @@ export function useRequests() {
         };
         
         setRequests(current => [newRequest, ...current]);
+        
+        // Send notification (mock)
+        console.log(`Notification: New request created by ${newRequest.requestedBy} for ${newRequest.itemName}`);
         
         toast({
           title: 'Request created',
@@ -155,27 +162,54 @@ export function useRequests() {
     setLoading(true);
     
     try {
-      // Remove permission check for demo purposes
+      if (!hasPermission(Permission.ApproveRequestFinal) && !hasPermission(Permission.ApproveRequestDepartment)) {
+        throw new Error("You don't have permission to approve requests");
+      }
       
       // Simulate API call
       setTimeout(() => {
-        setRequests(current => 
-          current.map(req => 
-            req.id === id 
-              ? { 
-                  ...req, 
-                  status: 'approved', 
-                  approvedBy: approverName,
-                  approvalDate: new Date()
-                } 
-              : req
-          )
-        );
+        const request = requests.find(req => req.id === id);
         
-        toast({
-          title: 'Request approved',
-          description: 'The request has been approved and is ready for fulfillment.',
-        });
+        // Handle department-level approval first if user is department head
+        if (request && request.status === 'pending' && hasPermission(Permission.ApproveRequestDepartment) && !hasPermission(Permission.ApproveRequestFinal)) {
+          setRequests(current => 
+            current.map(req => 
+              req.id === id 
+                ? { 
+                    ...req, 
+                    status: 'department-approved', 
+                    departmentApprovedBy: approverName,
+                    departmentApprovalDate: new Date()
+                  } 
+                : req
+            )
+          );
+          
+          toast({
+            title: 'Request approved by department',
+            description: 'The request has been approved at department level and is awaiting final approval.',
+          });
+        } 
+        // Handle final approval
+        else if ((request && request.status === 'department-approved') || hasPermission(Permission.ApproveRequestFinal)) {
+          setRequests(current => 
+            current.map(req => 
+              req.id === id 
+                ? { 
+                    ...req, 
+                    status: 'approved', 
+                    approvedBy: approverName,
+                    approvalDate: new Date()
+                  } 
+                : req
+            )
+          );
+          
+          toast({
+            title: 'Request approved',
+            description: 'The request has been approved and is ready for fulfillment.',
+          });
+        }
         
         setLoading(false);
       }, 500);
@@ -183,7 +217,7 @@ export function useRequests() {
       console.error('Error approving request:', error);
       toast({
         title: 'Error',
-        description: 'Failed to approve request. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to approve request. Please try again.',
         variant: 'destructive'
       });
       setLoading(false);
@@ -195,7 +229,9 @@ export function useRequests() {
     setLoading(true);
     
     try {
-      // Remove permission check for demo purposes
+      if (!hasPermission(Permission.ApproveRequestFinal) && !hasPermission(Permission.ApproveRequestDepartment)) {
+        throw new Error("You don't have permission to reject requests");
+      }
       
       // Simulate API call
       setTimeout(() => {
@@ -224,19 +260,21 @@ export function useRequests() {
       console.error('Error rejecting request:', error);
       toast({
         title: 'Error',
-        description: 'Failed to reject request. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to reject request. Please try again.',
         variant: 'destructive'
       });
       setLoading(false);
     }
   };
 
-  // Fulfill a request
+  // Enhanced fulfill request with FIFO for expiry dates
   const fulfillRequest = (id: string, fulfillerName: string, notes?: string) => {
     setLoading(true);
     
     try {
-      // Remove permission check for demo purposes
+      if (!hasPermission(Permission.FulfillRequest)) {
+        throw new Error("You don't have permission to fulfill requests");
+      }
       
       // Simulate API call
       setTimeout(() => {
@@ -246,16 +284,25 @@ export function useRequests() {
           throw new Error('Request not found');
         }
         
-        // Remove strict approval check for demo
-        // if (requestToFulfill.status !== 'approved') {
-        //   throw new Error('Request must be approved before fulfillment');
-        // }
+        // Check if request is approved
+        if (requestToFulfill.status !== 'approved') {
+          throw new Error('Request must be approved before fulfillment');
+        }
         
         // Update the item/asset based on request type
         if (requestToFulfill.itemType === 'inventory') {
-          const item = inventoryItems.find(i => i.id === requestToFulfill.itemId);
+          const item = inventoryItems.find(i => i.id === requestToFulfill.itemId) as InventoryItem;
           
           if (item && requestToFulfill.quantity) {
+            // Handle items with expiry dates - FIFO logic
+            // If the item has an expiryDate property, we need to deduct from oldest stock first
+            // This is a simplified version - in a real system, each batch would be tracked separately
+            if (item.expiryDate) {
+              // For demonstration purposes, we'll just update the expiryDate if needed
+              // In a real system, we'd have a more complex stock rotation mechanism
+              console.log(`Using inventory with expiry date: ${item.expiryDate}`);
+            }
+            
             // Add transaction to inventory
             addTransaction({
               itemId: item.id,

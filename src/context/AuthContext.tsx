@@ -1,4 +1,3 @@
-
 import { 
   createContext, 
   useContext, 
@@ -19,10 +18,11 @@ type AuthContextType = {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string, role?: string, department?: HotelDepartment) => Promise<void>;
-  signOut: () => Promise<void>;
+  signOut: (userId?: string) => Promise<void>;
   initialized: boolean;
   hasPermission: (permission: Permission) => boolean;
   getCurrentUserRole: () => string | null;
+  isAdmin: () => boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -87,26 +87,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
+  const [activeUsers, setActiveUsers] = useState<User[]>(() => {
+    const storedUsers = localStorage.getItem('mock_active_users');
+    return storedUsers ? JSON.parse(storedUsers) : [];
+  });
+
   useEffect(() => {
-    // Simulate auth initialization
     const storedUser = localStorage.getItem('mock_user');
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
       setSession({ user: parsedUser });
+      
+      const userExists = activeUsers.some(u => u.id === parsedUser.id);
+      if (!userExists) {
+        const updatedActiveUsers = [...activeUsers, parsedUser];
+        setActiveUsers(updatedActiveUsers);
+        localStorage.setItem('mock_active_users', JSON.stringify(updatedActiveUsers));
+      }
     } else {
-      // Auto-create a demo user with full permissions if none exists
       const demoUser: User = {
         id: 'demo-id',
         email: 'demo@grandluxury.hotel',
         name: 'Demo User',
         role: 'generalManager',
         department: 'Executive',
-        permissions: Object.values(Permission) // Grant all permissions
+        permissions: Object.values(Permission)
       };
       setUser(demoUser);
       setSession({ user: demoUser });
       localStorage.setItem('mock_user', JSON.stringify(demoUser));
+      
+      setActiveUsers([demoUser]);
+      localStorage.setItem('mock_active_users', JSON.stringify([demoUser]));
     }
     setInitialized(true);
   }, []);
@@ -114,12 +127,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const hasPermission = (permission: Permission): boolean => {
     if (!user) return false;
     
-    // If the user has custom permissions, check those
     if (user.permissions && user.permissions.includes(permission)) {
       return true;
     }
     
-    // Otherwise check role-based permissions
     const rolePermissions = RolePermissions[user.role] || [];
     return rolePermissions.includes(permission);
   };
@@ -128,27 +139,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return user ? user.role : null;
   };
 
+  const isAdmin = (): boolean => {
+    return user?.role === 'generalManager';
+  };
+
   const signIn = async (email: string, password: string) => {
     setLoading(true);
     try {
-      // Mock sign in (no actual backend call)
       setTimeout(() => {
-        // Determine role and department based on email
         const role = getRoleFromEmail(email);
         const department = getDepartmentFromEmail(email);
         
         const mockUser: User = { 
-          id: 'mock-id', 
+          id: `user-${Date.now()}`, 
           email, 
           name: email.split('@')[0],
           role,
           department,
-          permissions: Object.values(Permission) // Grant all permissions for demo purposes
+          permissions: role === 'generalManager' ? Object.values(Permission) : RolePermissions[role]
         };
         
         setUser(mockUser);
         setSession({ user: mockUser });
         localStorage.setItem('mock_user', JSON.stringify(mockUser));
+        
+        const updatedActiveUsers = [...activeUsers, mockUser];
+        setActiveUsers(updatedActiveUsers);
+        localStorage.setItem('mock_active_users', JSON.stringify(updatedActiveUsers));
         
         toast({
           title: 'Signed in successfully',
@@ -169,10 +186,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUp = async (email: string, password: string, name: string, role: string = 'staff', department: HotelDepartment = 'Front Office') => {
     setLoading(true);
     try {
-      // Mock sign up (no actual backend call)
       setTimeout(() => {
         const mockUser: User = { 
-          id: 'mock-id', 
+          id: `user-${Date.now()}`, 
           email, 
           name,
           role: role as User['role'],
@@ -182,6 +198,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(mockUser);
         setSession({ user: mockUser });
         localStorage.setItem('mock_user', JSON.stringify(mockUser));
+        
+        const updatedActiveUsers = [...activeUsers, mockUser];
+        setActiveUsers(updatedActiveUsers);
+        localStorage.setItem('mock_active_users', JSON.stringify(updatedActiveUsers));
         
         toast({
           title: 'Signed up successfully',
@@ -199,17 +219,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signOut = async () => {
+  const signOut = async (userId?: string) => {
     setLoading(true);
     try {
-      // Mock sign out
-      setUser(null);
-      setSession(null);
-      localStorage.removeItem('mock_user');
-      
-      toast({
-        title: 'Signed out successfully'
-      });
+      if (userId && user && userId !== user.id) {
+        if (user.role !== 'generalManager') {
+          throw new Error('Only administrators can sign out other users');
+        }
+        
+        const updatedActiveUsers = activeUsers.filter(u => u.id !== userId);
+        setActiveUsers(updatedActiveUsers);
+        localStorage.setItem('mock_active_users', JSON.stringify(updatedActiveUsers));
+        
+        toast({
+          title: 'User signed out',
+          description: 'The selected user has been signed out successfully'
+        });
+      } else {
+        setUser(null);
+        setSession(null);
+        localStorage.removeItem('mock_user');
+        
+        const updatedActiveUsers = activeUsers.filter(u => u.id !== user?.id);
+        setActiveUsers(updatedActiveUsers);
+        localStorage.setItem('mock_active_users', JSON.stringify(updatedActiveUsers));
+        
+        toast({
+          title: 'Signed out successfully'
+        });
+      }
     } catch (error: any) {
       toast({
         title: 'Error signing out',
@@ -231,7 +269,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signOut,
       initialized,
       hasPermission,
-      getCurrentUserRole
+      getCurrentUserRole,
+      isAdmin
     }}>
       {children}
     </AuthContext.Provider>

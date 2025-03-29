@@ -1,4 +1,3 @@
-
 export interface InventoryItem {
   id: string;
   name: string;
@@ -11,6 +10,19 @@ export interface InventoryItem {
   lastUpdated: Date;
   expiryDate?: Date;
   supplier?: string;
+  batches?: InventoryBatch[];
+  autoReorder?: boolean;
+  reorderThreshold?: number;
+  preferredSuppliers?: string[];
+}
+
+export interface InventoryBatch {
+  id: string;
+  quantity: number;
+  receivedDate: Date;
+  expiryDate?: Date;
+  supplierName?: string;
+  notes?: string;
 }
 
 export interface Asset {
@@ -73,9 +85,10 @@ export interface StockTransaction {
   date: Date;
   performedBy: string;
   notes?: string;
+  batchId?: string;
+  expiryDate?: Date;
 }
 
-// Updated user roles to match hotel organization
 export interface User {
   id: string;
   name: string;
@@ -85,7 +98,6 @@ export interface User {
   permissions?: string[];
 }
 
-// Hotel-specific departments
 export type HotelDepartment = 
   | 'Executive' 
   | 'Front Office' 
@@ -108,9 +120,12 @@ export interface Supplier {
   phone: string;
   address: string;
   categories: string[];
+  preferredForItems?: string[];
+  rating?: number;
+  lastOrderDate?: Date;
+  notes?: string;
 }
 
-// Updated for hotel-specific request system
 export interface RequestItem {
   id: string;
   itemId: string;
@@ -149,28 +164,22 @@ export interface Receipt {
   department: HotelDepartment;
 }
 
-// Permissions for different actions - updated for hotel context
 export enum Permission {
-  // Request permissions
   CreateRequest = "create:request",
   ViewRequest = "view:request",
   ApproveRequestDepartment = "approve:request:department",
   ApproveRequestFinal = "approve:request:final",
   FulfillRequest = "fulfill:request",
   
-  // Inventory permissions
   ManageInventory = "manage:inventory",
   ViewInventory = "view:inventory",
   
-  // Asset permissions
   ManageAssets = "manage:assets",
   ViewAssets = "view:assets",
   
-  // User management
   ManageUsers = "manage:users"
 }
 
-// Role-based permissions mapping for hotel roles
 export const RolePermissions: Record<User['role'], Permission[]> = {
   generalManager: Object.values(Permission),
   departmentHead: [
@@ -231,4 +240,16 @@ export const RolePermissions: Record<User['role'], Permission[]> = {
     Permission.ViewRequest,
     Permission.ViewInventory
   ]
+}
+
+export interface Notification {
+  id: string;
+  type: 'info' | 'warning' | 'error' | 'success';
+  title: string;
+  message: string;
+  date: Date;
+  read: boolean;
+  relatedItemId?: string;
+  relatedItemType?: 'request' | 'inventory' | 'asset' | 'user';
+  recipientIds?: string[];
 }
