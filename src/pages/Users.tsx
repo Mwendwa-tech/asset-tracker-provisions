@@ -7,14 +7,15 @@ import { DataTable } from '@/components/ui/DataTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, UserCog, Users as UsersIcon } from 'lucide-react';
+import { Plus, UserCog, Users as UsersIcon, Shield } from 'lucide-react';
 import { ActiveUsersList } from '@/components/admin/ActiveUsersList';
 import { useAuth } from '@/context/AuthContext';
+import { UserManagement } from '@/components/admin/UserManagement';
 
-// Just a basic Users page for now
 const Users = () => {
   const { users } = useUsers();
   const { isAdmin } = useAuth();
+  const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
   
   const columns = [
     {
@@ -52,7 +53,7 @@ const Users = () => {
           title="User Management"
           description="Manage hotel staff and their permissions"
           actions={
-            <Button onClick={() => {}} disabled={!isAdmin()}>
+            <Button onClick={() => setAddUserDialogOpen(true)} disabled={!isAdmin()}>
               <Plus className="mr-2 h-4 w-4" /> Add User
             </Button>
           }
@@ -62,6 +63,9 @@ const Users = () => {
           <TabsList>
             <TabsTrigger value="users"><UsersIcon className="h-4 w-4 mr-2" /> All Users</TabsTrigger>
             <TabsTrigger value="active"><UserCog className="h-4 w-4 mr-2" /> Active Sessions</TabsTrigger>
+            {isAdmin() && (
+              <TabsTrigger value="admin"><Shield className="h-4 w-4 mr-2" /> Admin Controls</TabsTrigger>
+            )}
           </TabsList>
           
           <TabsContent value="users" className="space-y-4">
@@ -76,6 +80,12 @@ const Users = () => {
           <TabsContent value="active" className="space-y-4">
             <ActiveUsersList />
           </TabsContent>
+          
+          {isAdmin() && (
+            <TabsContent value="admin" className="space-y-4">
+              <UserManagement />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </MainLayout>

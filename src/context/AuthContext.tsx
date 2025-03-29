@@ -1,3 +1,4 @@
+
 import { 
   createContext, 
   useContext, 
@@ -16,7 +17,7 @@ type AuthContextType = {
   session: Session | null;
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string, role?: string, department?: HotelDepartment) => Promise<void>;
   signUp: (email: string, password: string, name: string, role?: string, department?: HotelDepartment) => Promise<void>;
   signOut: (userId?: string) => Promise<void>;
   initialized: boolean;
@@ -143,20 +144,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return user?.role === 'generalManager';
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, role?: string, department?: HotelDepartment) => {
     setLoading(true);
     try {
       setTimeout(() => {
-        const role = getRoleFromEmail(email);
-        const department = getDepartmentFromEmail(email);
+        // If role is provided, use it; otherwise, determine from email
+        const userRole = role || getRoleFromEmail(email);
+        const userDepartment = department || getDepartmentFromEmail(email);
         
         const mockUser: User = { 
           id: `user-${Date.now()}`, 
           email, 
           name: email.split('@')[0],
-          role,
-          department,
-          permissions: role === 'generalManager' ? Object.values(Permission) : RolePermissions[role]
+          role: userRole as User['role'],
+          department: userDepartment,
+          permissions: userRole === 'generalManager' ? Object.values(Permission) : RolePermissions[userRole as User['role']]
         };
         
         setUser(mockUser);
@@ -169,7 +171,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         toast({
           title: 'Signed in successfully',
-          description: `Welcome back! You are signed in as ${role} in ${department}.`
+          description: `Welcome back! You are signed in as ${userRole} in ${userDepartment}.`
         });
       }, 500);
     } catch (error: any) {
