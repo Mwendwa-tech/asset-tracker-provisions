@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -56,20 +55,8 @@ const Requests = () => {
   const [dialogMode, setDialogMode] = useState<'view' | 'approve' | 'fulfill' | 'receipt'>('view');
   const [activeView, setActiveView] = useState<'all' | 'pending' | 'approved' | 'fulfilled' | 'receipts'>('all');
 
-  const filteredRequests = requests.filter(request => {
-    if (!user) return false;
-    
-    if (hasPermission(Permission.ApproveRequestFinal)) {
-      return true;
-    }
-    
-    if (user.role === 'storekeeper' && request.status === 'approved') {
-      return true;
-    }
-    
-    return request.requestedBy === user.name || 
-           (request.department && request.department === user.department);
-  });
+  // Allow viewing all requests regardless of permission for demo purposes
+  const filteredRequests = requests;
 
   // Request stats
   const pendingCount = filteredRequests.filter(r => r.status === 'pending').length;
@@ -412,9 +399,11 @@ const Requests = () => {
     }
   };
 
-  const canManageRequests = hasPermission(Permission.ApproveRequestFinal) || user?.role === 'departmentHead';
+  // Remove permission check for demo purposes
+  const canManageRequests = true;
 
-  if (!user || (!hasPermission(Permission.ViewRequest) && !hasPermission(Permission.ApproveRequestFinal) && !hasPermission(Permission.FulfillRequest))) {
+  // Remove strict permission checks to make the page accessible for demo
+  if (!user) {
     return (
       <MainLayout>
         <div className="animate-fade-in">
@@ -425,9 +414,9 @@ const Requests = () => {
           
           <div className="flex flex-col items-center justify-center py-12">
             <ShieldAlert className="h-16 w-16 text-red-500 mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
+            <h2 className="text-xl font-semibold mb-2">Please Sign In</h2>
             <p className="text-muted-foreground text-center max-w-md">
-              You don't have permission to view this page. Please contact your administrator if you believe this is an error.
+              You need to sign in to access this page.
             </p>
           </div>
         </div>

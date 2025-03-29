@@ -94,6 +94,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
       setSession({ user: parsedUser });
+    } else {
+      // Auto-create a demo user with full permissions if none exists
+      const demoUser: User = {
+        id: 'demo-id',
+        email: 'demo@grandluxury.hotel',
+        name: 'Demo User',
+        role: 'generalManager',
+        department: 'Executive',
+        permissions: Object.values(Permission) // Grant all permissions
+      };
+      setUser(demoUser);
+      setSession({ user: demoUser });
+      localStorage.setItem('mock_user', JSON.stringify(demoUser));
     }
     setInitialized(true);
   }, []);
@@ -129,7 +142,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           email, 
           name: email.split('@')[0],
           role,
-          department
+          department,
+          permissions: Object.values(Permission) // Grant all permissions for demo purposes
         };
         
         setUser(mockUser);

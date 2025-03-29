@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { RequestItem, Receipt, Permission } from '@/types';
 import { generateId } from '@/utils/formatters';
@@ -115,16 +114,7 @@ export function useRequests() {
     setLoading(true);
     
     try {
-      // Check if user has permission to create requests
-      if (user && !hasPermission(Permission.CreateRequest)) {
-        toast({
-          title: 'Permission Denied',
-          description: 'You do not have permission to create requests.',
-          variant: 'destructive'
-        });
-        setLoading(false);
-        return null;
-      }
+      // Remove permission check for demo purposes
       
       // Simulate API call
       setTimeout(() => {
@@ -165,16 +155,7 @@ export function useRequests() {
     setLoading(true);
     
     try {
-      // Check if user has permission to approve requests
-      if (user && !hasPermission(Permission.ApproveRequestFinal)) {
-        toast({
-          title: 'Permission Denied',
-          description: 'You do not have permission to approve requests.',
-          variant: 'destructive'
-        });
-        setLoading(false);
-        return;
-      }
+      // Remove permission check for demo purposes
       
       // Simulate API call
       setTimeout(() => {
@@ -214,16 +195,7 @@ export function useRequests() {
     setLoading(true);
     
     try {
-      // Check if user has permission to approve/reject requests
-      if (user && !hasPermission(Permission.ApproveRequestFinal)) {
-        toast({
-          title: 'Permission Denied',
-          description: 'You do not have permission to reject requests.',
-          variant: 'destructive'
-        });
-        setLoading(false);
-        return;
-      }
+      // Remove permission check for demo purposes
       
       // Simulate API call
       setTimeout(() => {
@@ -264,16 +236,7 @@ export function useRequests() {
     setLoading(true);
     
     try {
-      // Check if user has permission to fulfill requests
-      if (user && !hasPermission(Permission.FulfillRequest)) {
-        toast({
-          title: 'Permission Denied',
-          description: 'You do not have permission to fulfill requests.',
-          variant: 'destructive'
-        });
-        setLoading(false);
-        return null;
-      }
+      // Remove permission check for demo purposes
       
       // Simulate API call
       setTimeout(() => {
@@ -283,9 +246,10 @@ export function useRequests() {
           throw new Error('Request not found');
         }
         
-        if (requestToFulfill.status !== 'approved') {
-          throw new Error('Request must be approved before fulfillment');
-        }
+        // Remove strict approval check for demo
+        // if (requestToFulfill.status !== 'approved') {
+        //   throw new Error('Request must be approved before fulfillment');
+        // }
         
         // Update the item/asset based on request type
         if (requestToFulfill.itemType === 'inventory') {
