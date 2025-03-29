@@ -9,7 +9,8 @@ import {
   AlertCircle,
   Store,
   ArrowDown,
-  ShieldAlert
+  ShieldAlert,
+  Check
 } from 'lucide-react';
 import { useRequests } from '@/hooks/useRequests';
 import { RequestItem, Receipt, Permission } from '@/types';
@@ -527,7 +528,7 @@ const Requests = () => {
                     variant="outline"
                     size="sm"
                     disabled={!hasPermission(Permission.ApproveRequestFinal) && user?.role !== 'departmentHead'}
-                    onClick={() => handleApproveRequest(request)}
+                    onClick={() => handleApproveClick(selectedRequest)}
                   >
                     <Check className="h-4 w-4 mr-1" />
                     Approve
