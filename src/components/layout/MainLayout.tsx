@@ -35,7 +35,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-60'
         )}
       >
-        <Navbar onMenuClick={toggleSidebar} />
+        <Navbar setSidebarOpen={toggleSidebar} />
         
         <main className="flex-1 overflow-auto p-4 transition-all duration-300">
           <div className="mx-auto max-w-7xl">
