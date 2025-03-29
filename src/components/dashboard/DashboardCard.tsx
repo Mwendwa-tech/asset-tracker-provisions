@@ -1,6 +1,7 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
 
 interface DashboardCardProps {
   title: string;
@@ -8,6 +9,7 @@ interface DashboardCardProps {
   children: React.ReactNode;
   className?: string;
   footer?: React.ReactNode;
+  elevated?: boolean;
 }
 
 export function DashboardCard({
@@ -15,10 +17,17 @@ export function DashboardCard({
   icon,
   children,
   className,
-  footer
+  footer,
+  elevated = false
 }: DashboardCardProps) {
   return (
-    <Card className={cn("overflow-hidden transition-all hover:shadow-md", className)}>
+    <Card 
+      className={cn(
+        "overflow-hidden transition-all hover:shadow-md", 
+        elevated && "shadow-md border-primary/10",
+        className
+      )}
+    >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-base font-medium">{title}</CardTitle>
         {icon && <div className="h-5 w-5 text-muted-foreground">{icon}</div>}
@@ -26,9 +35,12 @@ export function DashboardCard({
       <CardContent>
         <div className="pb-2">{children}</div>
         {footer && (
-          <div className="border-t pt-2 text-xs text-muted-foreground">
-            {footer}
-          </div>
+          <>
+            <Separator className="my-2" />
+            <div className="text-xs text-muted-foreground">
+              {footer}
+            </div>
+          </>
         )}
       </CardContent>
     </Card>

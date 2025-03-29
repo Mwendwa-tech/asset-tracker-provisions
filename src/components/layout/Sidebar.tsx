@@ -9,7 +9,8 @@ import {
   Settings, 
   ShoppingCart, 
   Menu, 
-  X
+  X,
+  ClipboardCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,11 @@ export function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
       title: 'Assets',
       href: '/assets',
       icon: Briefcase,
+    },
+    {
+      title: 'Requests',
+      href: '/requests',
+      icon: ClipboardCheck,
     },
     {
       title: 'Reports',

@@ -2,14 +2,18 @@
 import { DashboardCard } from './DashboardCard';
 import { AssetSummary as AssetSummaryType } from '@/types';
 import { formatCurrency } from '@/utils/formatters';
-import { Briefcase } from 'lucide-react';
+import { Briefcase, ArrowUpCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 interface AssetSummaryProps {
   data: AssetSummaryType;
 }
 
 export function AssetSummary({ data }: AssetSummaryProps) {
+  const navigate = useNavigate();
+  
   // Format status percentages
   const getStatusPercentage = (status: 'available' | 'checkedOut' | 'maintenance') => {
     const total = data.totalAssets;
@@ -31,8 +35,9 @@ export function AssetSummary({ data }: AssetSummaryProps) {
     <DashboardCard 
       title="Asset Summary" 
       icon={<Briefcase />}
+      elevated
       footer={
-        <div className="flex justify-between">
+        <div className="flex justify-between items-center">
           <span>Total Value:</span>
           <span className="font-medium">{formatCurrency(data.totalValue)}</span>
         </div>
@@ -40,23 +45,23 @@ export function AssetSummary({ data }: AssetSummaryProps) {
     >
       <div className="space-y-4">
         <div className="grid grid-cols-3 gap-2">
-          <div>
-            <p className="text-sm font-medium">Total</p>
+          <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+            <p className="text-sm font-medium text-muted-foreground">Total</p>
             <p className="text-2xl font-bold">{data.totalAssets}</p>
           </div>
-          <div>
-            <p className="text-sm font-medium">Available</p>
-            <p className="text-2xl font-bold text-green-500">{data.available}</p>
+          <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+            <p className="text-sm font-medium text-green-600 dark:text-green-400">Available</p>
+            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{data.available}</p>
           </div>
-          <div>
-            <p className="text-sm font-medium">Checked Out</p>
-            <p className="text-2xl font-bold text-blue-500">{data.checkedOut}</p>
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+            <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Checked Out</p>
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{data.checkedOut}</p>
           </div>
         </div>
 
         <div className="space-y-2">
           <h4 className="text-sm font-medium">Status Distribution</h4>
-          <div className="flex h-2 overflow-hidden rounded bg-gray-100">
+          <div className="flex h-2 overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
             <div 
               className="bg-green-500" 
               style={{ width: `${getStatusPercentage('available')}%` }}
@@ -87,16 +92,33 @@ export function AssetSummary({ data }: AssetSummaryProps) {
         </div>
 
         <div className="space-y-2">
-          <h4 className="text-sm font-medium">Top Categories</h4>
+          <h4 className="text-sm font-medium flex justify-between">
+            <span>Top Categories</span>
+            <span className="text-muted-foreground">{data.categories.length} total</span>
+          </h4>
           {sortedCategories.slice(0, 3).map((category, index) => (
             <div key={index} className="space-y-1">
               <div className="flex justify-between text-xs">
                 <span>{category.name}</span>
-                <span>{category.count} items</span>
+                <span className="text-muted-foreground">{category.count} items</span>
               </div>
+              <Progress 
+                value={(category.count / data.totalAssets) * 100} 
+                className="h-1.5" 
+              />
             </div>
           ))}
         </div>
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="w-full" 
+          onClick={() => navigate('/assets')}
+        >
+          <ArrowUpCircle className="mr-2 h-4 w-4" />
+          View Assets
+        </Button>
       </div>
     </DashboardCard>
   );
