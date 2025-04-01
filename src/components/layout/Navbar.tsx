@@ -49,7 +49,7 @@ export const Navbar = ({ setSidebarOpen }: NavbarProps) => {
                   <span className="sr-only">Toggle theme</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="bg-background border">
                 <DropdownMenuItem onClick={() => setTheme("light")}>
                   Light
                 </DropdownMenuItem>
@@ -69,27 +69,32 @@ export const Navbar = ({ setSidebarOpen }: NavbarProps) => {
                   <User className="h-6 w-6" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>
-                  <div className="font-medium">{user?.name || 'User'}</div>
-                  <div className="text-xs text-muted-foreground">{user?.email || ''}</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {user?.role && <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded-full text-[10px] font-medium mr-1">
-                      {user.role.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                    </span>}
-                    {user?.department && <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-0.5 rounded-full text-[10px] font-medium">
-                      {user.department}
-                    </span>}
+              <DropdownMenuContent align="end" className="bg-background border w-64">
+                <DropdownMenuLabel className="p-4 border-b">
+                  <div className="font-medium text-lg">{user?.name || 'User'}</div>
+                  <div className="text-sm text-muted-foreground">{user?.email || ''}</div>
+                  <div className="flex items-center mt-1 space-x-1">
+                    {user?.role && (
+                      <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded-full text-[10px] font-medium">
+                        {user.role.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                      </span>
+                    )}
+                    {user?.department && (
+                      <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-0.5 rounded-full text-[10px] font-medium">
+                        {user.department}
+                      </span>
+                    )}
                   </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/settings">Settings</Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()}>
-                  Sign out
-                </DropdownMenuItem>
+                <div className="p-2">
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings" className="cursor-pointer flex items-center w-full">Settings</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer text-red-600">
+                    Sign out
+                  </DropdownMenuItem>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

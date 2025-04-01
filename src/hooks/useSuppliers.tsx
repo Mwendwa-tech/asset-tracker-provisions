@@ -1,12 +1,12 @@
 
 import { useState } from 'react';
-import { Supplier } from '@/types';
+import { Supplier, SupplierProduct } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { generateId } from '@/utils/formatters';
 import { toast } from '@/components/ui/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-// Mock suppliers data
+// Mock suppliers data with products
 const mockSuppliers: Supplier[] = [
   {
     id: 'sup-1',
@@ -15,31 +15,93 @@ const mockSuppliers: Supplier[] = [
     email: 'john@acmesupplies.com',
     phone: '(555) 123-4567',
     address: '123 Main St, Anytown, USA',
-    categories: ['Office', 'Electronics']
+    categories: ['Office', 'Electronics'],
+    products: [
+      {
+        id: 'prod-1',
+        name: 'A4 Paper',
+        category: 'Office',
+        unitPrice: 5.99,
+        unit: 'Ream',
+        minOrderQuantity: 10,
+        leadTime: 3,
+        autoReorder: true,
+        reorderThreshold: 5
+      },
+      {
+        id: 'prod-2',
+        name: 'Laptop Dell XPS',
+        category: 'Electronics',
+        unitPrice: 1299.99,
+        unit: 'Unit',
+        minOrderQuantity: 1,
+        leadTime: 14,
+        autoReorder: false,
+        reorderThreshold: 2
+      }
+    ]
   },
   {
     id: 'sup-2',
-    name: 'Tech Parts Inc',
+    name: 'Fresh Foods Inc',
     contactPerson: 'Jane Smith',
-    email: 'jane@techparts.com',
+    email: 'jane@freshfoods.com',
     phone: '(555) 987-6543',
-    address: '456 Tech Blvd, Silicon Valley, CA',
-    categories: ['Hardware', 'Electronics', 'Components']
+    address: '456 Farm Road, Countryside, CA',
+    categories: ['Food', 'Beverages'],
+    products: [
+      {
+        id: 'prod-3',
+        name: 'Rice (Basmati)',
+        category: 'Food',
+        unitPrice: 25.99,
+        unit: 'Kg',
+        minOrderQuantity: 20,
+        leadTime: 5,
+        autoReorder: true,
+        reorderThreshold: 10
+      },
+      {
+        id: 'prod-4',
+        name: 'Cooking Oil',
+        category: 'Food',
+        unitPrice: 8.99,
+        unit: 'Litre',
+        minOrderQuantity: 10,
+        leadTime: 4,
+        autoReorder: true,
+        reorderThreshold: 5
+      }
+    ]
   }
 ];
 
+// Storage key for localStorage
+const SUPPLIERS_STORAGE_KEY = 'hotel-suppliers-data';
+
 export function useSuppliers() {
   const queryClient = useQueryClient();
+  
+  // Get suppliers from localStorage or use mock data
+  const getInitialSuppliers = () => {
+    const storedData = localStorage.getItem(SUPPLIERS_STORAGE_KEY);
+    return storedData ? JSON.parse(storedData) : mockSuppliers;
+  };
 
   // Fetch suppliers
-  const { data: suppliers = mockSuppliers, isLoading: isLoadingSuppliers } = useQuery({
+  const { data: suppliers = getInitialSuppliers(), isLoading: isLoadingSuppliers } = useQuery({
     queryKey: ['suppliers'],
     queryFn: async () => {
       // In a real implementation, this would fetch from Supabase
-      // Since we're mocking, just return the mock data
-      return mockSuppliers;
+      return getInitialSuppliers();
     }
   });
+
+  // Save suppliers to localStorage
+  const saveSuppliers = (updatedSuppliers: Supplier[]) => {
+    localStorage.setItem(SUPPLIERS_STORAGE_KEY, JSON.stringify(updatedSuppliers));
+    return updatedSuppliers;
+  };
 
   // Add new supplier
   const addSupplierMutation = useMutation({
@@ -49,17 +111,16 @@ export function useSuppliers() {
       // Create a new supplier object with the generated ID
       const supplier: Supplier = {
         id,
-        ...newSupplier
+        ...newSupplier,
+        products: newSupplier.products || []
       };
       
-      // In a real implementation, this would save to Supabase
-      // For the mock, just return the newly created supplier
+      // Save to localStorage
+      const updatedSuppliers = saveSuppliers([...suppliers, supplier]);
+      
       return supplier;
     },
     onSuccess: (newSupplier) => {
-      // Add the new supplier to our mock data
-      mockSuppliers.push(newSupplier);
-      
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
       toast({
         title: 'Supplier added',
@@ -79,18 +140,13 @@ export function useSuppliers() {
   // Update existing supplier
   const updateSupplierMutation = useMutation({
     mutationFn: async ({ id, updatedData }: { id: string, updatedData: Partial<Supplier> }) => {
-      // Find the supplier in our mock data
-      const index = mockSuppliers.findIndex(s => s.id === id);
+      const updatedSuppliers = suppliers.map(s => 
+        s.id === id ? { ...s, ...updatedData } : s
+      );
       
-      if (index !== -1) {
-        // Update the supplier in our mock data
-        mockSuppliers[index] = {
-          ...mockSuppliers[index],
-          ...updatedData
-        };
-      }
+      // Save to localStorage
+      saveSuppliers(updatedSuppliers);
       
-      // Return the updated supplier
       return { id, ...updatedData };
     },
     onSuccess: () => {
@@ -113,13 +169,10 @@ export function useSuppliers() {
   // Delete supplier
   const deleteSupplierMutation = useMutation({
     mutationFn: async (id: string) => {
-      // Find the supplier in our mock data
-      const index = mockSuppliers.findIndex(s => s.id === id);
+      const updatedSuppliers = suppliers.filter(s => s.id !== id);
       
-      if (index !== -1) {
-        // Remove the supplier from our mock data
-        mockSuppliers.splice(index, 1);
-      }
+      // Save to localStorage
+      saveSuppliers(updatedSuppliers);
       
       return id;
     },
@@ -143,6 +196,178 @@ export function useSuppliers() {
     }
   });
 
+  // Add product to supplier
+  const addProductMutation = useMutation({
+    mutationFn: async ({ 
+      supplierId, 
+      product 
+    }: { 
+      supplierId: string, 
+      product: Omit<SupplierProduct, 'id'>
+    }) => {
+      const newProduct = {
+        id: generateId('prod'),
+        ...product
+      };
+      
+      const updatedSuppliers = suppliers.map(supplier => {
+        if (supplier.id === supplierId) {
+          return {
+            ...supplier,
+            products: [...(supplier.products || []), newProduct]
+          };
+        }
+        return supplier;
+      });
+      
+      // Save to localStorage
+      saveSuppliers(updatedSuppliers);
+      
+      return { supplierId, product: newProduct };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      toast({
+        title: 'Product added',
+        description: `${data.product.name} has been added to supplier's products.`,
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error adding product:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to add product. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Update product
+  const updateProductMutation = useMutation({
+    mutationFn: async ({ 
+      supplierId, 
+      productId, 
+      updatedData 
+    }: { 
+      supplierId: string, 
+      productId: string, 
+      updatedData: Partial<SupplierProduct>
+    }) => {
+      const updatedSuppliers = suppliers.map(supplier => {
+        if (supplier.id === supplierId) {
+          const updatedProducts = (supplier.products || []).map(product => 
+            product.id === productId ? { ...product, ...updatedData } : product
+          );
+          
+          return {
+            ...supplier,
+            products: updatedProducts
+          };
+        }
+        return supplier;
+      });
+      
+      // Save to localStorage
+      saveSuppliers(updatedSuppliers);
+      
+      return { supplierId, productId, updatedData };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      toast({
+        title: 'Product updated',
+        description: 'Product has been updated successfully.',
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error updating product:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update product. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Delete product
+  const deleteProductMutation = useMutation({
+    mutationFn: async ({ 
+      supplierId, 
+      productId 
+    }: { 
+      supplierId: string, 
+      productId: string 
+    }) => {
+      const updatedSuppliers = suppliers.map(supplier => {
+        if (supplier.id === supplierId) {
+          return {
+            ...supplier,
+            products: (supplier.products || []).filter(product => product.id !== productId)
+          };
+        }
+        return supplier;
+      });
+      
+      // Save to localStorage
+      saveSuppliers(updatedSuppliers);
+      
+      return { supplierId, productId };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      toast({
+        title: 'Product removed',
+        description: 'Product has been removed from supplier.',
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error deleting product:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to remove product. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Check inventory levels and generate auto-reorder alerts
+  const getAutoReorderAlerts = (inventoryItems: any[]) => {
+    const alerts: {
+      supplierId: string;
+      supplierName: string;
+      productId: string;
+      productName: string;
+      currentStock: number;
+      reorderThreshold: number;
+      suggestedOrderQuantity: number;
+    }[] = [];
+    
+    suppliers.forEach(supplier => {
+      (supplier.products || []).forEach(product => {
+        if (product.autoReorder) {
+          // Find matching inventory item
+          const inventoryItem = inventoryItems.find(
+            item => item.name.toLowerCase() === product.name.toLowerCase()
+          );
+          
+          if (inventoryItem && inventoryItem.quantity <= product.reorderThreshold) {
+            alerts.push({
+              supplierId: supplier.id,
+              supplierName: supplier.name,
+              productId: product.id,
+              productName: product.name,
+              currentStock: inventoryItem.quantity,
+              reorderThreshold: product.reorderThreshold,
+              suggestedOrderQuantity: product.minOrderQuantity
+            });
+          }
+        }
+      });
+    });
+    
+    return alerts;
+  };
+
   // Wrapper functions for mutations
   const addSupplier = (newSupplier: Omit<Supplier, 'id'>) => {
     return addSupplierMutation.mutate(newSupplier);
@@ -156,11 +381,27 @@ export function useSuppliers() {
     return deleteSupplierMutation.mutate(id);
   };
 
+  const addProduct = (supplierId: string, product: Omit<SupplierProduct, 'id'>) => {
+    return addProductMutation.mutate({ supplierId, product });
+  };
+
+  const updateProduct = (supplierId: string, productId: string, updatedData: Partial<SupplierProduct>) => {
+    return updateProductMutation.mutate({ supplierId, productId, updatedData });
+  };
+
+  const deleteProduct = (supplierId: string, productId: string) => {
+    return deleteProductMutation.mutate({ supplierId, productId });
+  };
+
   return {
     suppliers,
     loading: isLoadingSuppliers || addSupplierMutation.isPending || updateSupplierMutation.isPending || deleteSupplierMutation.isPending,
     addSupplier,
     updateSupplier,
-    deleteSupplier
+    deleteSupplier,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    getAutoReorderAlerts
   };
 }

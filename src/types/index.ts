@@ -112,6 +112,18 @@ export type HotelDepartment =
   | 'Security' 
   | 'Spa & Wellness';
 
+export interface SupplierProduct {
+  id: string;
+  name: string;
+  category: string;
+  unitPrice: number;
+  unit: string;
+  minOrderQuantity: number;
+  leadTime: number;  // in days
+  autoReorder: boolean;
+  reorderThreshold: number;
+}
+
 export interface Supplier {
   id: string;
   name: string;
@@ -120,10 +132,7 @@ export interface Supplier {
   phone: string;
   address: string;
   categories: string[];
-  preferredForItems?: string[];
-  rating?: number;
-  lastOrderDate?: Date;
-  notes?: string;
+  products?: SupplierProduct[];
 }
 
 export interface RequestItem {
