@@ -370,27 +370,27 @@ export function useSuppliers() {
 
   // Wrapper functions for mutations
   const addSupplier = (newSupplier: Omit<Supplier, 'id'>) => {
-    return addSupplierMutation.mutate(newSupplier);
+    addSupplierMutation.mutate(newSupplier);
   };
 
   const updateSupplier = (id: string, updatedData: Partial<Supplier>) => {
-    return updateSupplierMutation.mutate({ id, updatedData });
+    updateSupplierMutation.mutate({ id, updatedData });
   };
 
   const deleteSupplier = (id: string) => {
-    return deleteSupplierMutation.mutate(id);
+    deleteSupplierMutation.mutate(id);
   };
 
   const addProduct = (supplierId: string, product: Omit<SupplierProduct, 'id'>) => {
-    return addProductMutation.mutate({ supplierId, product });
+    addProductMutation.mutate({ supplierId, product });
   };
 
   const updateProduct = (supplierId: string, productId: string, updatedData: Partial<SupplierProduct>) => {
-    return updateProductMutation.mutate({ supplierId, productId, updatedData });
+    updateProductMutation.mutate({ supplierId, productId, updatedData });
   };
 
   const deleteProduct = (supplierId: string, productId: string) => {
-    return deleteProductMutation.mutate({ supplierId, productId });
+    deleteProductMutation.mutate({ supplierId, productId });
   };
 
   return {
