@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lock, Mail, UserCog } from 'lucide-react';
+import { Lock, Mail, UserCog, User as UserIcon } from 'lucide-react';
 import { 
   Select, 
   SelectContent, 
@@ -19,6 +19,7 @@ import { HotelDepartment } from '@/types';
 export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState<HotelDepartment>('Front Office');
   const [showRoleSelection, setShowRoleSelection] = useState(false);
@@ -28,7 +29,7 @@ export default function SignIn() {
     e.preventDefault();
     try {
       if (showRoleSelection && selectedRole) {
-        await signIn(email, password, selectedRole, selectedDepartment);
+        await signIn(email, password, selectedRole, selectedDepartment, username);
       } else {
         // First step - show role selection after email/password are entered
         setShowRoleSelection(true);
@@ -79,7 +80,7 @@ export default function SignIn() {
           <CardDescription className="text-center">
             {!showRoleSelection 
               ? 'Enter your credentials to access your account'
-              : 'Select your role and department'}
+              : 'Complete your profile to sign in'}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -125,6 +126,21 @@ export default function SignIn() {
             ) : (
               <>
                 <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <div className="relative">
+                    <UserIcon className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      id="username"
+                      type="text"
+                      placeholder="Your preferred username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="role">Select Your Role</Label>
                   <div className="relative">
                     <UserCog className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
@@ -144,7 +160,10 @@ export default function SignIn() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="department">Select Your Department</Label>
-                  <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                  <Select 
+                    value={selectedDepartment} 
+                    onValueChange={(value: HotelDepartment) => setSelectedDepartment(value)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select your department" />
                     </SelectTrigger>
@@ -164,7 +183,7 @@ export default function SignIn() {
             <Button
               type="submit"
               className="w-full"
-              disabled={loading || (showRoleSelection && !selectedRole)}
+              disabled={loading || (showRoleSelection && (!selectedRole || !username))}
             >
               {loading ? 'Signing in...' : showRoleSelection ? 'Complete Sign In' : 'Continue'}
             </Button>

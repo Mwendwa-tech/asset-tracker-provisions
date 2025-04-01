@@ -1,4 +1,3 @@
-
 import { 
   createContext, 
   useContext, 
@@ -17,7 +16,7 @@ type AuthContextType = {
   session: Session | null;
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string, role?: string, department?: HotelDepartment) => Promise<void>;
+  signIn: (email: string, password: string, role?: string, department?: HotelDepartment, username?: string) => Promise<void>;
   signUp: (email: string, password: string, name: string, role?: string, department?: HotelDepartment) => Promise<void>;
   signOut: (userId?: string) => Promise<void>;
   initialized: boolean;
@@ -109,7 +108,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } else {
       const demoUser: User = {
         id: 'demo-id',
-        email: 'demo@grandluxury.hotel',
+        email: 'demo@lukenyagetaway.com',
         name: 'Demo User',
         role: 'generalManager',
         department: 'Executive',
@@ -144,7 +143,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return user?.role === 'generalManager';
   };
 
-  const signIn = async (email: string, password: string, role?: string, department?: HotelDepartment) => {
+  const signIn = async (email: string, password: string, role?: string, department?: HotelDepartment, username?: string) => {
     setLoading(true);
     try {
       setTimeout(() => {
@@ -155,7 +154,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const mockUser: User = { 
           id: `user-${Date.now()}`, 
           email, 
-          name: email.split('@')[0],
+          name: username || email.split('@')[0],
           role: userRole as User['role'],
           department: userDepartment,
           permissions: userRole === 'generalManager' ? Object.values(Permission) : RolePermissions[userRole as User['role']]
@@ -171,7 +170,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         toast({
           title: 'Signed in successfully',
-          description: `Welcome back! You are signed in as ${userRole} in ${userDepartment}.`
+          description: `Welcome back ${username ? username : ''}! You are signed in as ${userRole} in ${userDepartment}.`
         });
       }, 500);
     } catch (error: any) {

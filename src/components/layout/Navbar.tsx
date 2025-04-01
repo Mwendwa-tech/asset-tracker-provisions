@@ -34,7 +34,7 @@ export const Navbar = ({ setSidebarOpen }: NavbarProps) => {
         </div>
         <div className="flex flex-1 items-center justify-between">
           <Link to="/" className="flex items-center text-xl font-bold">
-            Grand Luxury Hotel
+            Lukenya Getaway
           </Link>
           <div className="flex items-center gap-2">
             {/* Notification Center */}
@@ -73,6 +73,14 @@ export const Navbar = ({ setSidebarOpen }: NavbarProps) => {
                 <DropdownMenuLabel>
                   <div className="font-medium">{user?.name || 'User'}</div>
                   <div className="text-xs text-muted-foreground">{user?.email || ''}</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {user?.role && <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded-full text-[10px] font-medium mr-1">
+                      {user.role.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                    </span>}
+                    {user?.department && <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-0.5 rounded-full text-[10px] font-medium">
+                      {user.department}
+                    </span>}
+                  </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
