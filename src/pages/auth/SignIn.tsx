@@ -14,12 +14,13 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
+import { HotelDepartment } from '@/types';
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState('Front Office');
+  const [selectedDepartment, setSelectedDepartment] = useState<HotelDepartment>('Front Office');
   const [showRoleSelection, setShowRoleSelection] = useState(false);
   const { signIn, loading, user } = useAuth();
 
@@ -55,7 +56,7 @@ export default function SignIn() {
     { value: 'staff', label: 'Staff' }
   ];
 
-  const departments = [
+  const departments: HotelDepartment[] = [
     'Executive',
     'Front Office',
     'Housekeeping',
