@@ -18,9 +18,11 @@ export interface RecentReport {
 
 export interface ReportData {
   name: string;
-  value: number;
+  value: number | string;  // Changed to allow both number and string values
   detail: string;
   color?: string;
+  secondary?: string | number; // Added to fix TypeScript errors
+  status?: string; // Added to fix TypeScript errors
 }
 
 export interface ReportContextType {

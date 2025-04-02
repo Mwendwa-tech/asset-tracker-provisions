@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   getRecentReports, 
@@ -159,14 +158,21 @@ export function useReports() {
     if (data.length > 0) {
       switch (reportType) {
         case 'inventory-status':
-          const totalItems = data.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
-          const averageValue = data.reduce((sum, item) => sum + (Number(item.secondary) || 0), 0) / data.length;
+          const totalItems = data.reduce((sum, item) => {
+            const itemValue = typeof item.value === 'number' ? item.value : 0;
+            return sum + itemValue;
+          }, 0);
+          
+          const averageValue = data.reduce((sum, item) => {
+            const secondaryValue = item.secondary && typeof item.secondary === 'number' ? item.secondary : 0;
+            return sum + secondaryValue;
+          }, 0) / data.length;
           
           return [
             {
               name: "Summary",
-              value: `Total Items: ${totalItems}`,
-              secondary: `Average Value: $${averageValue.toFixed(2)}`,
+              value: "Summary",
+              detail: `Total Items: ${totalItems}, Average Value: $${averageValue.toFixed(2)}`,
               status: "summary",
               color: "#4C51BF"
             },
@@ -180,8 +186,8 @@ export function useReports() {
           return [
             {
               name: "Summary",
-              value: `Usage Rate: ${percentCheckedOut}%`,
-              secondary: `${checkedOutAssets} of ${data.length} assets in use`,
+              value: "Summary",
+              detail: `Usage Rate: ${percentCheckedOut}%, ${checkedOutAssets} of ${data.length} assets in use`,
               status: "summary",
               color: "#4C51BF"
             },
@@ -195,8 +201,8 @@ export function useReports() {
           return [
             {
               name: "Summary",
-              value: `${pendingRequests} pending requests`,
-              secondary: `${approvedRequests} approved requests`,
+              value: "Summary",
+              detail: `${pendingRequests} pending requests, ${approvedRequests} approved requests`,
               status: "summary",
               color: "#4C51BF"
             },

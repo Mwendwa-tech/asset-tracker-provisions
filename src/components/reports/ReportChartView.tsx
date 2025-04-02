@@ -32,7 +32,9 @@ export const ReportChartView = ({
   };
 
   // Value formatter for charts
-  const formatYAxisTick = (value: number) => {
+  const formatYAxisTick = (value: number | string) => {
+    if (typeof value === 'string') return value;
+    
     // Special formatting for days
     if (reportType === 'expiry-tracking') {
       return value === 0 ? '0' : `${value}d`;
@@ -48,9 +50,12 @@ export const ReportChartView = ({
     return value.toString();
   };
 
+  // Filter out any data items with string values for the chart
+  const chartData = data.filter(item => typeof item.value === 'number');
+
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data}>
+      <BarChart data={chartData.length > 0 ? chartData : data}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="name" />
         <YAxis 

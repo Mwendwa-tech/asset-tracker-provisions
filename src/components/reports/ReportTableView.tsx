@@ -21,11 +21,12 @@ export const ReportTableView = ({
   reportContext
 }: ReportTableViewProps) => {
   // Color function for table cells based on data
-  const getCellColor = (reportType: string, value: number) => {
+  const getCellColor = (reportType: string, value: number | string) => {
     if (reportType === 'low-stock') {
-      return value <= 5 ? 'text-red-600 font-medium' : 'text-amber-600';
+      return typeof value === 'number' && value <= 5 ? 'text-red-600 font-medium' : 'text-amber-600';
     }
     if (reportType === 'expiry-tracking') {
+      if (typeof value !== 'number') return '';
       if (value <= 0) return 'text-red-600 font-medium';
       if (value <= 7) return 'text-amber-600 font-medium';
       if (value <= 14) return 'text-amber-500';
