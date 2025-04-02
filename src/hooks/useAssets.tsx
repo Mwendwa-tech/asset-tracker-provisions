@@ -253,7 +253,7 @@ export function useAssets() {
   };
 
   // Check in an asset
-  const checkInAsset = (assetId: string, notes?: string, condition: string = 'good') => {
+  const checkInAsset = (assetId: string, notes?: string, condition: Asset['condition'] = 'good') => {
     setLoading(true);
     
     try {
@@ -277,9 +277,7 @@ export function useAssets() {
       }
       
       // Ensure condition is properly typed
-      const assetCondition = (condition === 'excellent' || condition === 'good' || condition === 'fair' || condition === 'poor') 
-        ? condition 
-        : 'good';
+      const assetCondition: Asset['condition'] = condition;
       
       // Update asset status
       const updatedAsset: Asset = {
@@ -290,7 +288,7 @@ export function useAssets() {
         expectedReturnDate: undefined,
         condition: assetCondition,
         lastConditionNote: notes || `Checked in with ${condition} condition`
-      } as Asset;
+      };
       
       setAssets(current => 
         current.map(a => a.id === assetId ? updatedAsset : a)
@@ -338,6 +336,64 @@ export function useAssets() {
     }
   };
 
+  // Change asset status
+  const changeAssetStatus = (assetId: string, newStatus: Asset['status'], notes?: string) => {
+    setLoading(true);
+    
+    try {
+      const asset = assets.find(a => a.id === assetId);
+      
+      if (!asset) {
+        throw new Error('Asset not found');
+      }
+      
+      // Prevent invalid transitions
+      if (asset.status === 'checked-out' && newStatus !== 'available') {
+        throw new Error('Checked-out assets must be checked in before changing to other statuses');
+      }
+      
+      // Update asset status
+      const updatedAsset: Asset = {
+        ...asset,
+        status: newStatus,
+        statusChangeDate: new Date(),
+        statusChangeNote: notes || `Status changed to ${newStatus}`,
+        // Clear checkout data if going to a status other than 'checked-out'
+        ...(newStatus !== 'checked-out' && {
+          assignedTo: undefined,
+          checkoutDate: undefined,
+          expectedReturnDate: undefined
+        })
+      };
+      
+      setAssets(current => 
+        current.map(a => a.id === assetId ? updatedAsset : a)
+      );
+      
+      toast({
+        title: 'Status updated',
+        description: `${asset.name} status changed to ${newStatus}.`,
+      });
+      
+      // Immediately invalidate cache to ensure UI updates
+      setTimeout(() => {
+        setSummary(calculateSummary(assets.map(a => a.id === assetId ? updatedAsset : a)));
+      }, 100);
+      
+      setLoading(false);
+      return true;
+    } catch (error) {
+      console.error('Error changing asset status:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to change asset status. Please try again.',
+        variant: 'destructive'
+      });
+      setLoading(false);
+      return false;
+    }
+  };
+
   return {
     assets,
     summary,
@@ -347,6 +403,7 @@ export function useAssets() {
     updateAsset,
     deleteAsset,
     checkOutAsset,
-    checkInAsset
+    checkInAsset,
+    changeAssetStatus
   };
 }

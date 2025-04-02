@@ -23,7 +23,7 @@ interface CheckinFormProps {
 
 export function CheckinForm({ asset, onSubmit, onCancel, loading = false }: CheckinFormProps) {
   const [notes, setNotes] = useState('');
-  const [condition, setCondition] = useState<Asset['condition']>('good');
+  const [condition, setCondition] = useState<Asset['condition']>(asset.condition || 'good');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
