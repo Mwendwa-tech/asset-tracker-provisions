@@ -6,20 +6,28 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/utils/formatters';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface CheckinFormProps {
   asset: Asset;
-  onSubmit: (data: { notes?: string }) => void;
+  onSubmit: (data: { notes?: string; condition: string }) => void;
   onCancel: () => void;
   loading?: boolean;
 }
 
 export function CheckinForm({ asset, onSubmit, onCancel, loading = false }: CheckinFormProps) {
   const [notes, setNotes] = useState('');
+  const [condition, setCondition] = useState('good');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ notes });
+    onSubmit({ notes, condition });
   };
 
   return (
@@ -41,6 +49,22 @@ export function CheckinForm({ asset, onSubmit, onCancel, loading = false }: Chec
             Expected return: <span className="font-medium">{formatDate(asset.expectedReturnDate)}</span>
           </p>
         )}
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="condition">Asset Condition</Label>
+        <Select value={condition} onValueChange={setCondition}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select condition" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="excellent">Excellent - Like new</SelectItem>
+            <SelectItem value="good">Good - Minor wear</SelectItem>
+            <SelectItem value="fair">Fair - Functional with noticeable wear</SelectItem>
+            <SelectItem value="poor">Poor - Needs repair</SelectItem>
+            <SelectItem value="damaged">Damaged - Requires immediate attention</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       
       <div className="space-y-2">

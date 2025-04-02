@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Supplier, SupplierProduct } from '@/types';
 import { supabase } from '@/lib/supabase';

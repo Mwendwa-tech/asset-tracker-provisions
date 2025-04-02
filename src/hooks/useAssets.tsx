@@ -200,12 +200,17 @@ export function useAssets() {
       }
       
       // Update asset status
-      updateAsset(assetId, {
+      const updatedAsset = {
+        ...asset,
         status: 'checked-out',
         assignedTo,
         checkoutDate: new Date(),
         expectedReturnDate
-      });
+      };
+      
+      setAssets(current => 
+        current.map(a => a.id === assetId ? updatedAsset : a)
+      );
       
       // Add to checkout history
       const newCheckout: CheckoutHistory = {
@@ -227,6 +232,11 @@ export function useAssets() {
         description: `${asset.name} has been checked out to ${assignedTo}.`,
       });
       
+      // Immediately invalidate cache to ensure UI updates
+      setTimeout(() => {
+        setSummary(calculateSummary(assets.map(a => a.id === assetId ? updatedAsset : a)));
+      }, 100);
+      
       setLoading(false);
       return newCheckout;
     } catch (error) {
@@ -242,7 +252,7 @@ export function useAssets() {
   };
 
   // Check in an asset
-  const checkInAsset = (assetId: string, notes?: string) => {
+  const checkInAsset = (assetId: string, notes?: string, condition: string = 'good') => {
     setLoading(true);
     
     try {
@@ -256,26 +266,55 @@ export function useAssets() {
         throw new Error('Asset is not checked out');
       }
       
+      // Determine next status based on condition
+      let nextStatus: 'available' | 'maintenance';
+      if (['excellent', 'good'].includes(condition)) {
+        nextStatus = 'available';
+      } else {
+        nextStatus = 'maintenance';
+      }
+      
       // Update asset status
-      updateAsset(assetId, {
-        status: 'available',
+      const updatedAsset = {
+        ...asset,
+        status: nextStatus,
         assignedTo: undefined,
         checkoutDate: undefined,
-        expectedReturnDate: undefined
-      });
+        expectedReturnDate: undefined,
+        condition: condition,
+        lastConditionNote: notes || `Checked in with ${condition} condition`
+      };
+      
+      setAssets(current => 
+        current.map(a => a.id === assetId ? updatedAsset : a)
+      );
       
       // Update checkout history
-      setCheckoutHistory(current => 
-        current.map(history => 
-          history.assetId === assetId && !history.returnedDate
-            ? { ...history, returnedDate: new Date(), notes: notes ? `${history.notes || ''} | Return note: ${notes}` : history.notes }
-            : history
-        )
+      const updatedHistory = checkoutHistory.map(history => 
+        history.assetId === assetId && !history.returnedDate
+          ? { 
+              ...history, 
+              returnedDate: new Date(), 
+              returnCondition: condition,
+              notes: notes 
+                ? `${history.notes || ''} | Return condition: ${condition} | Note: ${notes}` 
+                : `${history.notes || ''} | Return condition: ${condition}`
+            }
+          : history
       );
+      
+      setCheckoutHistory(updatedHistory);
+      
+      // Immediately invalidate cache to ensure UI updates
+      setTimeout(() => {
+        setSummary(calculateSummary(assets.map(a => a.id === assetId ? updatedAsset : a)));
+      }, 100);
       
       toast({
         title: 'Asset checked in',
-        description: `${asset.name} has been returned to inventory.`,
+        description: nextStatus === 'available' 
+          ? `${asset.name} has been returned to inventory.` 
+          : `${asset.name} has been sent to maintenance.`,
       });
       
       setLoading(false);
