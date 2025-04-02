@@ -18,11 +18,11 @@ export interface RecentReport {
 
 export interface ReportData {
   name: string;
-  value: number | string;  // Changed to allow both number and string values
+  value: number | string;  // Allow both number and string values
   detail: string;
   color?: string;
-  secondary?: string | number; // Added to fix TypeScript errors
-  status?: string; // Added to fix TypeScript errors
+  secondary?: string | number; // For additional numeric data
+  status?: string; // For status-based filtering
 }
 
 export interface ReportContextType {

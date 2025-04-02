@@ -121,6 +121,7 @@ export function useReports() {
         setLoading(false);
       }, 800);
       
+      console.log("Generated report data:", enhancedData); // Log data for debugging
       return { data: enhancedData, reportId };
     } catch (error) {
       console.error('Error generating report:', error);
@@ -181,6 +182,7 @@ export function useReports() {
           ];
           
         case 'asset-usage':
+        case 'asset-utilization': // Added alias for consistency
           const checkedOutAssets = data.filter(item => item.status === 'checked-out').length;
           const percentCheckedOut = (checkedOutAssets / data.length * 100).toFixed(1);
           

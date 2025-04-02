@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/common/PageHeader';
 import { ReportCard } from '@/components/reports/ReportCard';
@@ -26,6 +26,8 @@ const Reports = () => {
     
     // Generate the report data
     const { data, reportId } = generateReport(reportType, title);
+    
+    console.log("Report data received:", data); // Debug log
     
     // Set the report data
     setReportData(data);
