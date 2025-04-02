@@ -167,17 +167,17 @@ export function useRequests() {
       
       // Handle department-level approval first if user is department head
       if (request && request.status === 'pending' && hasPermission(Permission.ApproveRequestDepartment) && !hasPermission(Permission.ApproveRequestFinal)) {
-        // Update state immediately
+        // Update state immediately with proper typing
         const updatedRequests = requests.map(req => 
           req.id === id 
             ? { 
                 ...req, 
-                status: 'department-approved', 
+                status: 'department-approved' as const, 
                 departmentApprovedBy: approverName,
                 departmentApprovalDate: new Date()
               } 
             : req
-        );
+        ) as RequestItem[];
         
         setRequests(updatedRequests);
         
@@ -188,17 +188,17 @@ export function useRequests() {
       } 
       // Handle final approval
       else if ((request && request.status === 'department-approved') || hasPermission(Permission.ApproveRequestFinal)) {
-        // Update state immediately
+        // Update state immediately with proper typing
         const updatedRequests = requests.map(req => 
           req.id === id 
             ? { 
                 ...req, 
-                status: 'approved', 
+                status: 'approved' as const, 
                 approvedBy: approverName,
                 approvalDate: new Date()
               } 
             : req
-        );
+        ) as RequestItem[];
         
         setRequests(updatedRequests);
         
@@ -321,18 +321,18 @@ export function useRequests() {
         }
       }
       
-      // Update request status immediately
+      // Update request status immediately with proper typing
       const updatedRequests = requests.map(req => 
         req.id === id 
           ? { 
               ...req, 
-              status: 'fulfilled', 
+              status: 'fulfilled' as const, 
               fulfilledBy: fulfillerName,
               fulfillmentDate: new Date(),
               notes: notes ? `${req.notes || ''} | Fulfillment note: ${notes}` : req.notes
             } 
           : req
-      );
+      ) as RequestItem[];
       
       setRequests(updatedRequests);
       

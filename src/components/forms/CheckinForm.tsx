@@ -16,14 +16,14 @@ import {
 
 interface CheckinFormProps {
   asset: Asset;
-  onSubmit: (data: { notes?: string; condition: string }) => void;
+  onSubmit: (data: { notes?: string; condition: Asset['condition'] }) => void;
   onCancel: () => void;
   loading?: boolean;
 }
 
 export function CheckinForm({ asset, onSubmit, onCancel, loading = false }: CheckinFormProps) {
   const [notes, setNotes] = useState('');
-  const [condition, setCondition] = useState('good');
+  const [condition, setCondition] = useState<Asset['condition']>('good');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +53,7 @@ export function CheckinForm({ asset, onSubmit, onCancel, loading = false }: Chec
       
       <div className="space-y-2">
         <Label htmlFor="condition">Asset Condition</Label>
-        <Select value={condition} onValueChange={setCondition}>
+        <Select value={condition} onValueChange={(value: Asset['condition']) => setCondition(value)}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select condition" />
           </SelectTrigger>
@@ -62,7 +62,6 @@ export function CheckinForm({ asset, onSubmit, onCancel, loading = false }: Chec
             <SelectItem value="good">Good - Minor wear</SelectItem>
             <SelectItem value="fair">Fair - Functional with noticeable wear</SelectItem>
             <SelectItem value="poor">Poor - Needs repair</SelectItem>
-            <SelectItem value="damaged">Damaged - Requires immediate attention</SelectItem>
           </SelectContent>
         </Select>
       </div>

@@ -160,6 +160,7 @@ export interface RequestItem {
 export interface Receipt {
   id: string;
   requestId: string;
+  receiptNumber?: string;
   items: {
     name: string;
     quantity?: number;

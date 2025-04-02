@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { 
   Asset, 
@@ -199,10 +200,10 @@ export function useAssets() {
         throw new Error('Asset is not available for checkout');
       }
       
-      // Update asset status
-      const updatedAsset = {
+      // Update asset status with proper typing
+      const updatedAsset: Asset = {
         ...asset,
-        status: 'checked-out',
+        status: 'checked-out' as const,
         assignedTo,
         checkoutDate: new Date(),
         expectedReturnDate
@@ -266,24 +267,30 @@ export function useAssets() {
         throw new Error('Asset is not checked out');
       }
       
-      // Determine next status based on condition
-      let nextStatus: 'available' | 'maintenance';
+      // Determine next status based on condition with proper typing
+      let nextStatus: Asset['status'] = 'available';
+      
       if (['excellent', 'good'].includes(condition)) {
         nextStatus = 'available';
       } else {
         nextStatus = 'maintenance';
       }
       
+      // Ensure condition is properly typed
+      const assetCondition = (condition === 'excellent' || condition === 'good' || condition === 'fair' || condition === 'poor') 
+        ? condition 
+        : 'good';
+      
       // Update asset status
-      const updatedAsset = {
+      const updatedAsset: Asset = {
         ...asset,
         status: nextStatus,
         assignedTo: undefined,
         checkoutDate: undefined,
         expectedReturnDate: undefined,
-        condition: condition,
+        condition: assetCondition,
         lastConditionNote: notes || `Checked in with ${condition} condition`
-      };
+      } as Asset;
       
       setAssets(current => 
         current.map(a => a.id === assetId ? updatedAsset : a)
