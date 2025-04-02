@@ -6,13 +6,14 @@ import { ReportCard } from '@/components/reports/ReportCard';
 import { RecentReportsList } from '@/components/reports/RecentReportsList';
 import { ReportDialog } from '@/components/reports/ReportDialog';
 import { Button } from '@/components/ui/button';
-import { Calendar } from 'lucide-react';
+import { Calendar, Download } from 'lucide-react';
 import { getReportContext } from '@/components/reports/ReportUtils';
 import { ReportData } from '@/types/reports';
 import { useReports } from '@/hooks/useReports';
+import { toast } from 'sonner';
 
 const Reports = () => {
-  const { recentReports, loading, generateReport, reportTypes } = useReports();
+  const { recentReports, loading, generateReport, reportTypes, scheduleReport } = useReports();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentReportType, setCurrentReportType] = useState("");
@@ -36,8 +37,15 @@ const Reports = () => {
   };
   
   const handleScheduleReport = (id: string) => {
-    // This would be implemented in a real application
-    console.log(`Scheduling report: ${id}`);
+    scheduleReport(id);
+    toast.success('Report scheduled successfully');
+  };
+  
+  const handleScheduleAll = () => {
+    reportTypes.forEach(report => {
+      scheduleReport(report.id);
+    });
+    toast.success('All reports scheduled successfully');
   };
 
   return (
@@ -45,9 +53,9 @@ const Reports = () => {
       <div className="animate-fade-in">
         <PageHeader
           title="Reports"
-          description="Generate and schedule hostel management reports"
+          description="Generate and manage professional hotel management reports"
           actions={
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleScheduleAll}>
               <Calendar className="mr-2 h-4 w-4" /> Schedule All
             </Button>
           }

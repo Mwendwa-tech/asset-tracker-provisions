@@ -12,7 +12,8 @@ import { toast } from 'sonner';
 
 // Use localStorage key constants
 const STORAGE_KEYS = {
-  RECENT_REPORTS: 'hostel-recent-reports'
+  RECENT_REPORTS: 'hostel-recent-reports',
+  SCHEDULED_REPORTS: 'hostel-scheduled-reports'
 };
 
 // Helper to safely serialize reports for localStorage (removing non-serializable icon property)
@@ -23,6 +24,14 @@ const serializeReports = (reports: RecentReport[]) => {
     return serializableReport;
   });
 };
+
+interface ScheduledReport {
+  id: string;
+  reportType: string;
+  title: string;
+  frequency: 'daily' | 'weekly' | 'monthly';
+  nextRun: Date;
+}
 
 export function useReports() {
   // Initialize state with data from localStorage or mock data
@@ -48,6 +57,16 @@ export function useReports() {
     }
   });
   
+  const [scheduledReports, setScheduledReports] = useState<ScheduledReport[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.SCHEDULED_REPORTS);
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error('Error loading scheduled reports:', error);
+      return [];
+    }
+  });
+  
   const [loading, setLoading] = useState(false);
 
   // Save to localStorage whenever recent reports change
@@ -60,52 +79,143 @@ export function useReports() {
       console.error('Error saving recent reports:', error);
     }
   }, [recentReports]);
+  
+  // Save scheduled reports to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.SCHEDULED_REPORTS, JSON.stringify(scheduledReports));
+    } catch (error) {
+      console.error('Error saving scheduled reports:', error);
+    }
+  }, [scheduledReports]);
 
-  // Generate report data
+  // Generate report data - enhanced for professional reports
   const generateReport = (reportType: string, title: string) => {
     setLoading(true);
     
     try {
+      // Generate report data based on type
+      const data = getReportData(reportType);
+      const reportId = generateId();
+      
+      // Add summary statistics for professional reports
+      const enhancedData = addReportSummary(data, reportType);
+      
+      // Add to recent reports
+      const newReport: RecentReport = {
+        type: reportType,
+        title: title,
+        date: new Date().toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric', 
+          year: 'numeric' 
+        }),
+        icon: null // Placeholder, will be filled by RecentReportsList
+      };
+      
+      setRecentReports(prev => [newReport, ...prev.slice(0, 4)]);
+      
       // Simulate API call delay
       setTimeout(() => {
-        // Generate report data based on type
-        const data = getReportData(reportType);
-        const reportId = generateId();
-        
-        // Add to recent reports
-        const newReport: RecentReport = {
-          type: reportType,
-          title: title,
-          date: new Date().toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric', 
-            year: 'numeric' 
-          }),
-          icon: null // Placeholder, will be filled by RecentReportsList
-        };
-        
-        setRecentReports(prev => [newReport, ...prev.slice(0, 4)]);
-        
         toast.success(`Generated: ${title}`);
         setLoading(false);
-        
-        return { data, reportId };
-      }, 1000);
+      }, 800);
+      
+      return { data: enhancedData, reportId };
     } catch (error) {
       console.error('Error generating report:', error);
       toast.error('Failed to generate report');
       setLoading(false);
       return { data: [], reportId: '' };
     }
+  };
+  
+  // Schedule a report for automatic generation
+  const scheduleReport = (reportId: string) => {
+    const reportType = getReportTypes().find(r => r.id === reportId);
+    if (!reportType) return false;
     
-    // Return empty data while loading
-    return { data: [], reportId: generateId() };
+    // Check if this report is already scheduled
+    const isAlreadyScheduled = scheduledReports.some(r => r.reportType === reportId);
+    
+    if (!isAlreadyScheduled) {
+      const newScheduledReport: ScheduledReport = {
+        id: generateId(),
+        reportType: reportId,
+        title: reportType.title,
+        frequency: 'weekly',
+        nextRun: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Next week
+      };
+      
+      setScheduledReports(prev => [...prev, newScheduledReport]);
+    }
+    
+    return true;
+  };
+  
+  // Add professional summary to reports
+  const addReportSummary = (data: ReportData[], reportType: string): ReportData[] => {
+    // Add a summary entry based on report type
+    if (data.length > 0) {
+      switch (reportType) {
+        case 'inventory-status':
+          const totalItems = data.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+          const averageValue = data.reduce((sum, item) => sum + (Number(item.secondary) || 0), 0) / data.length;
+          
+          return [
+            {
+              name: "Summary",
+              value: `Total Items: ${totalItems}`,
+              secondary: `Average Value: $${averageValue.toFixed(2)}`,
+              status: "summary",
+              color: "#4C51BF"
+            },
+            ...data
+          ];
+          
+        case 'asset-usage':
+          const checkedOutAssets = data.filter(item => item.status === 'checked-out').length;
+          const percentCheckedOut = (checkedOutAssets / data.length * 100).toFixed(1);
+          
+          return [
+            {
+              name: "Summary",
+              value: `Usage Rate: ${percentCheckedOut}%`,
+              secondary: `${checkedOutAssets} of ${data.length} assets in use`,
+              status: "summary",
+              color: "#4C51BF"
+            },
+            ...data
+          ];
+          
+        case 'request-analytics':
+          const pendingRequests = data.filter(item => item.status === 'pending').length;
+          const approvedRequests = data.filter(item => item.status === 'approved').length;
+          
+          return [
+            {
+              name: "Summary",
+              value: `${pendingRequests} pending requests`,
+              secondary: `${approvedRequests} approved requests`,
+              status: "summary",
+              color: "#4C51BF"
+            },
+            ...data
+          ];
+          
+        default:
+          return data;
+      }
+    }
+    return data;
   };
 
   return {
     recentReports,
+    scheduledReports,
     loading,
     reportTypes: getReportTypes(),
-    generateReport
+    generateReport,
+    scheduleReport
   };
 }
