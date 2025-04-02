@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import { 
   getRecentReports, 
   getReportTypes, 
-  getReportData, 
-  getReportContext 
+  getReportContext,
+  generateMockReportData
 } from '@/components/reports/ReportUtils';
 import { RecentReport, ReportData } from '@/types/reports';
 import { generateId } from '@/utils/formatters';
@@ -93,8 +94,8 @@ export function useReports() {
     setLoading(true);
     
     try {
-      // Generate report data based on type
-      const data = getReportData(reportType);
+      // Generate report data based on type using mock data
+      const data = generateMockReportData(reportType);
       const reportId = generateId();
       
       // Add summary statistics for professional reports

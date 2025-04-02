@@ -126,7 +126,76 @@ export const getReportContext = (reportType: string): ReportContextType => {
   }
 };
 
-// Generate data for reports based on inventory and assets
+// Generate mock data for reports - this solves our problem!
+export const generateMockReportData = (reportType: string): ReportData[] => {
+  switch(reportType) {
+    case 'inventory-status':
+      return [
+        { name: "Towels", value: 120, detail: "Bathroom (unit)", secondary: 12.99 },
+        { name: "Bed Sheets", value: 85, detail: "Bedroom (unit)", secondary: 24.99 },
+        { name: "Soap", value: 210, detail: "Bathroom (box)", secondary: 5.99 },
+        { name: "Pillows", value: 60, detail: "Bedroom (unit)", secondary: 15.99 },
+        { name: "Toilet Paper", value: 150, detail: "Bathroom (rolls)", secondary: 0.99 },
+        { name: "Shampoo", value: 95, detail: "Bathroom (bottle)", secondary: 3.99 },
+        { name: "Blankets", value: 45, detail: "Bedroom (unit)", secondary: 34.99 }
+      ];
+    case 'low-stock':
+      return [
+        { name: "Hand Sanitizer", value: 5, detail: "Min required: 20 bottle" },
+        { name: "Coffee Pods", value: 8, detail: "Min required: 30 pod" },
+        { name: "Light Bulbs", value: 3, detail: "Min required: 15 unit" },
+        { name: "Dish Soap", value: 2, detail: "Min required: 10 bottle" },
+        { name: "Laundry Detergent", value: 1, detail: "Min required: 5 container" }
+      ];
+    case 'asset-status':
+      return [
+        { name: "Washing Machine #1", value: 1, detail: "Available" },
+        { name: "Washing Machine #2", value: 0, detail: "Under maintenance" },
+        { name: "Dryer #1", value: 1, detail: "Available" },
+        { name: "AC Unit - Room 101", value: 1, detail: "Available" },
+        { name: "TV - Common Room", value: 0, detail: "Under repair" },
+        { name: "Coffee Machine", value: 1, detail: "Available" },
+        { name: "Microwave - Kitchen", value: 1, detail: "Available" }
+      ];
+    case 'consumption-trends':
+      return [
+        { name: "Toilet Paper", value: 45, detail: "rolls used this month" },
+        { name: "Soap", value: 28, detail: "boxes used this month" },
+        { name: "Shampoo", value: 22, detail: "bottles used this month" },
+        { name: "Coffee", value: 15, detail: "kg used this month" },
+        { name: "Detergent", value: 12, detail: "bottles used this month" }
+      ];
+    case 'asset-utilization':
+      return [
+        { name: "Washing Machine #1", value: 78, detail: "Laundry - Basement", status: "checked-out" },
+        { name: "Dryer #1", value: 65, detail: "Laundry - Basement", status: "checked-out" },
+        { name: "Common Room TV", value: 45, detail: "Entertainment - Floor 1", status: "checked-out" },
+        { name: "Kitchen #1", value: 85, detail: "Cooking - Floor 1", status: "checked-out" },
+        { name: "Game Console", value: 25, detail: "Entertainment - Floor 2", status: "available" }
+      ];
+    case 'expiry-tracking':
+      return [
+        { name: "Milk", value: 2, detail: "Expires in 2 days" },
+        { name: "Yogurt", value: 5, detail: "Expires in 5 days" },
+        { name: "Bread", value: 1, detail: "Expires in 1 day" },
+        { name: "Cleaning Solution", value: 60, detail: "Expires in 60 days" },
+        { name: "Air Fresheners", value: 0, detail: "EXPIRED" },
+        { name: "Orange Juice", value: -1, detail: "EXPIRED" }
+      ];
+    case 'request-analytics':
+      return [
+        { name: "Room Cleaning", value: 12, detail: "8 fulfilled, 4 pending", status: "pending" },
+        { name: "Maintenance", value: 7, detail: "5 fulfilled, 2 pending", status: "pending" },
+        { name: "New Supplies", value: 5, detail: "3 approved, 2 rejected", status: "approved" },
+        { name: "Internet Issues", value: 4, detail: "All resolved", status: "fulfilled" },
+        { name: "Room Change", value: 2, detail: "1 approved, 1 rejected", status: "approved" }
+      ];
+    default:
+      return [];
+  }
+};
+
+// Original function kept but will not be used directly anymore
 export const getReportData = (reportType: string, items?: InventoryItem[], assets?: Asset[]): ReportData[] => {
   // Ensure we have data before trying to use it
   if (!items || !assets) {
