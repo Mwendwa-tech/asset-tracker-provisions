@@ -39,6 +39,9 @@ export interface Asset {
   currentValue: number;
   condition: 'excellent' | 'good' | 'fair' | 'poor';
   lastMaintenance?: Date;
+  lastConditionNote?: string;
+  statusChangeDate?: Date;
+  statusChangeNote?: string;
 }
 
 export interface InventorySummary {
