@@ -124,7 +124,7 @@ export function useAssets() {
     }
   }, []);
 
-  // Update existing asset - Critical fix: ensure loading state is reset properly
+  // Update existing asset
   const updateItem = useCallback((id: string, updatedData: Partial<Asset>) => {
     setLoading(true);
     
@@ -157,7 +157,7 @@ export function useAssets() {
     }
   }, []);
 
-  // Delete asset - Critical fix: ensure loading state is reset properly
+  // Delete asset
   const deleteItem = useCallback((id: string) => {
     setLoading(true);
     
@@ -188,7 +188,7 @@ export function useAssets() {
     }
   }, [assets]);
 
-  // Check out an asset - Critical fix: ensure loading state is reset properly
+  // Check out an asset
   const checkOutAsset = useCallback((
     assetId: string, 
     assignedTo: string, 
@@ -201,10 +201,12 @@ export function useAssets() {
       const asset = assets.find(a => a.id === assetId);
       
       if (!asset) {
+        setLoading(false);
         throw new Error('Asset not found');
       }
       
       if (asset.status !== 'available') {
+        setLoading(false);
         throw new Error('Asset is not available for checkout');
       }
       
@@ -256,7 +258,7 @@ export function useAssets() {
     }
   }, [assets]);
 
-  // Check in an asset - Critical fix: ensure loading state is reset properly
+  // Check in an asset
   const checkInAsset = useCallback((assetId: string, notes?: string, condition: Asset['condition'] = 'good') => {
     setLoading(true);
     
@@ -264,10 +266,12 @@ export function useAssets() {
       const asset = assets.find(a => a.id === assetId);
       
       if (!asset) {
+        setLoading(false);
         throw new Error('Asset not found');
       }
       
       if (asset.status !== 'checked-out') {
+        setLoading(false);
         throw new Error('Asset is not checked out');
       }
       
@@ -335,7 +339,7 @@ export function useAssets() {
     }
   }, [assets, checkoutHistory]);
 
-  // Change asset status - Critical fix: ensure loading state is reset properly
+  // Change asset status
   const changeAssetStatus = useCallback((assetId: string, newStatus: Asset['status'], notes?: string) => {
     setLoading(true);
     
@@ -343,11 +347,13 @@ export function useAssets() {
       const asset = assets.find(a => a.id === assetId);
       
       if (!asset) {
+        setLoading(false);
         throw new Error('Asset not found');
       }
       
       // Prevent invalid transitions
       if (asset.status === 'checked-out' && newStatus !== 'available') {
+        setLoading(false);
         throw new Error('Checked-out assets must be checked in before changing to other statuses');
       }
       
