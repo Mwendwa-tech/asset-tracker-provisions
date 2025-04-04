@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Asset, 
   AssetSummary, 
@@ -19,6 +18,17 @@ const STORAGE_KEYS = {
   CHECKOUT_HISTORY: 'hostel-checkout-history'
 };
 
+// Debounced localStorage save function to improve performance
+const useDebounceStorage = (key: string, data: any) => {
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      localStorage.setItem(key, JSON.stringify(data));
+    }, 100); // Short delay for better performance
+
+    return () => clearTimeout(handler);
+  }, [key, data]);
+};
+
 export function useAssets() {
   // Initialize state with data from localStorage or mock data
   const [assets, setAssets] = useState<Asset[]>(() => {
@@ -35,23 +45,12 @@ export function useAssets() {
   
   const [loading, setLoading] = useState(false);
 
-  // Save to localStorage whenever assets or checkout history change
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.ASSETS, JSON.stringify(assets));
-  }, [assets]);
+  // Use debounced storage for performance
+  useDebounceStorage(STORAGE_KEYS.ASSETS, assets);
+  useDebounceStorage(STORAGE_KEYS.CHECKOUT_HISTORY, checkoutHistory);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CHECKOUT_HISTORY, JSON.stringify(checkoutHistory));
-  }, [checkoutHistory]);
-
-  // Update summary whenever assets change
-  useEffect(() => {
-    const newSummary = calculateSummary(assets);
-    setSummary(newSummary);
-  }, [assets]);
-
-  // Calculate asset summary
-  const calculateSummary = (assetItems: Asset[]): AssetSummary => {
+  // Memoize summary calculation for better performance
+  const calculateSummary = useCallback((assetItems: Asset[]): AssetSummary => {
     const categories: Record<string, number> = {};
     let available = 0;
     let checkedOut = 0;
@@ -79,32 +78,39 @@ export function useAssets() {
       categories: Object.entries(categories).map(([name, count]) => ({ name, count })),
       totalValue
     };
-  };
+  }, []);
+
+  // Update summary whenever assets change - with optimized performance
+  useEffect(() => {
+    // Use requestAnimationFrame for smoother UI updates
+    const updateFrame = requestAnimationFrame(() => {
+      const newSummary = calculateSummary(assets);
+      setSummary(newSummary);
+    });
+    
+    return () => cancelAnimationFrame(updateFrame);
+  }, [assets, calculateSummary]);
 
   // Add new asset
-  const addAsset = (newAsset: Omit<Asset, 'id'>) => {
+  const addAsset = useCallback((newAsset: Omit<Asset, 'id'>) => {
     setLoading(true);
     
     try {
-      // In a real app, this would be an API call
-      setTimeout(() => {
-        const assetToAdd: Asset = {
-          ...newAsset,
-          id: generateId()
-        };
-        
-        setAssets(currentAssets => {
-          const updatedAssets = [...currentAssets, assetToAdd];
-          return updatedAssets;
-        });
-        
-        toast({
-          title: 'Asset added',
-          description: `${assetToAdd.name} has been added to the asset registry.`,
-        });
-        
-        setLoading(false);
-      }, 500);
+      // Create the asset with immediate UI update
+      const assetToAdd: Asset = {
+        ...newAsset,
+        id: generateId()
+      };
+      
+      setAssets(currentAssets => [...currentAssets, assetToAdd]);
+      
+      toast({
+        title: 'Asset added',
+        description: `${assetToAdd.name} has been added to the asset registry.`,
+      });
+      
+      setLoading(false);
+      return assetToAdd;
     } catch (error) {
       console.error('Error adding asset:', error);
       toast({
@@ -113,31 +119,31 @@ export function useAssets() {
         variant: 'destructive'
       });
       setLoading(false);
+      return null;
     }
-  };
+  }, []);
 
   // Update existing asset
-  const updateAsset = (id: string, updatedData: Partial<Asset>) => {
+  const updateItem = useCallback((id: string, updatedData: Partial<Asset>) => {
     setLoading(true);
     
     try {
-      // In a real app, this would be an API call
-      setTimeout(() => {
-        setAssets(currentAssets => 
-          currentAssets.map(asset => 
-            asset.id === id 
-              ? { ...asset, ...updatedData } 
-              : asset
-          )
-        );
-        
-        toast({
-          title: 'Asset updated',
-          description: 'Asset has been updated successfully.',
-        });
-        
-        setLoading(false);
-      }, 500);
+      // Update with immediate UI change
+      setAssets(currentAssets => 
+        currentAssets.map(asset => 
+          asset.id === id 
+            ? { ...asset, ...updatedData } 
+            : asset
+        )
+      );
+      
+      toast({
+        title: 'Asset updated',
+        description: 'Asset has been updated successfully.',
+      });
+      
+      setLoading(false);
+      return true;
     } catch (error) {
       console.error('Error updating asset:', error);
       toast({
@@ -146,29 +152,29 @@ export function useAssets() {
         variant: 'destructive'
       });
       setLoading(false);
+      return false;
     }
-  };
+  }, []);
 
   // Delete asset
-  const deleteAsset = (id: string) => {
+  const deleteItem = useCallback((id: string) => {
     setLoading(true);
     
     try {
-      // In a real app, this would be an API call
-      setTimeout(() => {
-        const assetToDelete = assets.find(asset => asset.id === id);
-        
-        setAssets(currentAssets => currentAssets.filter(asset => asset.id !== id));
-        
-        if (assetToDelete) {
-          toast({
-            title: 'Asset deleted',
-            description: `${assetToDelete.name} has been removed from the asset registry.`,
-          });
-        }
-        
-        setLoading(false);
-      }, 500);
+      const assetToDelete = assets.find(asset => asset.id === id);
+      
+      // Delete with immediate UI update
+      setAssets(currentAssets => currentAssets.filter(asset => asset.id !== id));
+      
+      if (assetToDelete) {
+        toast({
+          title: 'Asset deleted',
+          description: `${assetToDelete.name} has been removed from the asset registry.`,
+        });
+      }
+      
+      setLoading(false);
+      return true;
     } catch (error) {
       console.error('Error deleting asset:', error);
       toast({
@@ -177,11 +183,12 @@ export function useAssets() {
         variant: 'destructive'
       });
       setLoading(false);
+      return false;
     }
-  };
+  }, [assets]);
 
   // Check out an asset
-  const checkOutAsset = (
+  const checkOutAsset = useCallback((
     assetId: string, 
     assignedTo: string, 
     expectedReturnDate?: Date,
@@ -209,6 +216,7 @@ export function useAssets() {
         expectedReturnDate
       };
       
+      // Immediately update UI with optimistic updates
       setAssets(current => 
         current.map(a => a.id === assetId ? updatedAsset : a)
       );
@@ -233,11 +241,6 @@ export function useAssets() {
         description: `${asset.name} has been checked out to ${assignedTo}.`,
       });
       
-      // Immediately invalidate cache to ensure UI updates
-      setTimeout(() => {
-        setSummary(calculateSummary(assets.map(a => a.id === assetId ? updatedAsset : a)));
-      }, 100);
-      
       setLoading(false);
       return newCheckout;
     } catch (error) {
@@ -250,10 +253,10 @@ export function useAssets() {
       setLoading(false);
       return null;
     }
-  };
+  }, [assets]);
 
   // Check in an asset
-  const checkInAsset = (assetId: string, notes?: string, condition: Asset['condition'] = 'good') => {
+  const checkInAsset = useCallback((assetId: string, notes?: string, condition: Asset['condition'] = 'good') => {
     setLoading(true);
     
     try {
@@ -279,7 +282,7 @@ export function useAssets() {
       // Ensure condition is properly typed
       const assetCondition: Asset['condition'] = condition;
       
-      // Update asset status
+      // Update asset status with immediate UI update
       const updatedAsset: Asset = {
         ...asset,
         status: nextStatus,
@@ -310,11 +313,6 @@ export function useAssets() {
       
       setCheckoutHistory(updatedHistory);
       
-      // Immediately invalidate cache to ensure UI updates
-      setTimeout(() => {
-        setSummary(calculateSummary(assets.map(a => a.id === assetId ? updatedAsset : a)));
-      }, 100);
-      
       toast({
         title: 'Asset checked in',
         description: nextStatus === 'available' 
@@ -334,10 +332,10 @@ export function useAssets() {
       setLoading(false);
       return false;
     }
-  };
+  }, [assets, checkoutHistory]);
 
   // Change asset status
-  const changeAssetStatus = (assetId: string, newStatus: Asset['status'], notes?: string) => {
+  const changeAssetStatus = useCallback((assetId: string, newStatus: Asset['status'], notes?: string) => {
     setLoading(true);
     
     try {
@@ -352,7 +350,7 @@ export function useAssets() {
         throw new Error('Checked-out assets must be checked in before changing to other statuses');
       }
       
-      // Update asset status
+      // Update asset status with immediate UI update
       const updatedAsset: Asset = {
         ...asset,
         status: newStatus,
@@ -375,11 +373,6 @@ export function useAssets() {
         description: `${asset.name} status changed to ${newStatus}.`,
       });
       
-      // Immediately invalidate cache to ensure UI updates
-      setTimeout(() => {
-        setSummary(calculateSummary(assets.map(a => a.id === assetId ? updatedAsset : a)));
-      }, 100);
-      
       setLoading(false);
       return true;
     } catch (error) {
@@ -392,7 +385,7 @@ export function useAssets() {
       setLoading(false);
       return false;
     }
-  };
+  }, [assets]);
 
   return {
     assets,
@@ -400,8 +393,8 @@ export function useAssets() {
     checkoutHistory,
     loading,
     addAsset,
-    updateAsset,
-    deleteAsset,
+    updateItem,
+    deleteItem,
     checkOutAsset,
     checkInAsset,
     changeAssetStatus
