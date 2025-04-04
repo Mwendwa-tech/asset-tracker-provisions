@@ -49,10 +49,11 @@ const Assets = () => {
     checkoutHistory,
     loading: assetLoading, 
     addAsset,
-    updateAsset,
-    deleteAsset,
+    updateItem,
+    deleteItem,
     checkOutAsset,
-    checkInAsset
+    checkInAsset,
+    changeAssetStatus
   } = useAssets();
 
   const {
@@ -86,7 +87,7 @@ const Assets = () => {
 
   const handleDeleteAsset = (asset: Asset) => {
     if (window.confirm(`Are you sure you want to delete ${asset.name}?`)) {
-      deleteAsset(asset.id);
+      deleteItem(asset.id);
     }
   };
 
@@ -137,7 +138,7 @@ const Assets = () => {
 
   const handleAssetFormSubmit = (data: Omit<Asset, 'id'>) => {
     if (selectedAsset) {
-      updateAsset(selectedAsset.id, data);
+      updateItem(selectedAsset.id, data);
     } else {
       addAsset(data);
     }
@@ -186,7 +187,7 @@ const Assets = () => {
       return;
     }
     
-    updateAsset(asset.id, { status: newStatus });
+    changeAssetStatus(asset.id, newStatus);
   };
 
   const assetColumns = [
