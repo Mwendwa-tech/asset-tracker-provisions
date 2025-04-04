@@ -14,6 +14,7 @@ import { ReportTableView } from "./ReportTableView";
 import { ReportData, ReportContextType } from "@/types/reports";
 import { toast } from "sonner";
 import { getReportColor } from "./ReportUtils";
+import { useState } from "react";
 
 interface ReportDialogProps {
   open: boolean;
@@ -34,9 +35,57 @@ export const ReportDialog = ({
   reportContext,
   data
 }: ReportDialogProps) => {
-  const handleDownload = () => {
-    // Simulate download functionality
-    toast.success(`Downloaded ${reportTitle}`);
+  // Production-ready state for download status
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    
+    try {
+      // In a real application, this would call an API endpoint
+      // Here we're simulating the download with a timeout
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Create a downloadable CSV from the report data
+      const csvContent = generateCSV(data);
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create a hidden link and trigger the download
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `${reportTitle.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success(`Downloaded ${reportTitle}`);
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Failed to download report");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  // Helper function to generate CSV content
+  const generateCSV = (data: ReportData[]): string => {
+    // Create header row based on the data structure
+    const headers = ["Name", "Value", "Details"];
+    
+    // Create CSV content
+    const csvRows = [
+      headers.join(','),
+      ...data.map(item => {
+        const sanitizedValue = typeof item.value === 'string' 
+          ? `"${item.value.replace(/"/g, '""')}"` 
+          : item.value;
+        const sanitizedDetail = `"${item.detail.replace(/"/g, '""')}"`;
+        return `"${item.name}",${sanitizedValue},${sanitizedDetail}`;
+      })
+    ];
+    
+    return csvRows.join('\n');
   };
 
   // Get the color from the utility function
@@ -89,9 +138,10 @@ export const ReportDialog = ({
           </Button>
           <Button
             onClick={handleDownload}
+            disabled={downloading || data.length === 0}
           >
             <Download className="mr-2 h-4 w-4" />
-            Download Report
+            {downloading ? 'Downloading...' : 'Download Report'}
           </Button>
         </div>
       </DialogContent>

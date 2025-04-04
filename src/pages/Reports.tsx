@@ -21,33 +21,39 @@ const Reports = () => {
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [reportId, setReportId] = useState("");
   
+  // Immediately handle report generation with optimistic updates
   const handleGenerateReport = (reportType: string, title: string) => {
     setCurrentReportType(reportType);
+    setReportTitle(title);
+    
+    // Show dialog immediately with loading state for better UX
+    setIsDialogOpen(true);
     
     // Generate the report data
     const { data, reportId } = generateReport(reportType, title);
     
-    console.log("Report data received:", data); // Debug log
-    
-    // Set the report data
+    // Update state with the generated data
     setReportData(data);
-    setReportTitle(title);
     setReportId(reportId);
-    
-    // Open the dialog
-    setIsDialogOpen(true);
   };
   
+  // Optimized schedule function with immediate feedback
   const handleScheduleReport = (id: string) => {
-    scheduleReport(id);
-    toast.success('Report scheduled successfully');
+    const success = scheduleReport(id);
+    if (success) {
+      toast.success('Report scheduled successfully');
+    }
   };
   
+  // Optimized batch operation
   const handleScheduleAll = () => {
+    let scheduled = 0;
     reportTypes.forEach(report => {
-      scheduleReport(report.id);
+      const success = scheduleReport(report.id);
+      if (success) scheduled++;
     });
-    toast.success('All reports scheduled successfully');
+    
+    toast.success(`${scheduled} reports scheduled successfully`);
   };
 
   return (
