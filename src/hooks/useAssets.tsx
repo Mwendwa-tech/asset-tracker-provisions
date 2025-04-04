@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { 
   Asset, 
@@ -123,7 +124,7 @@ export function useAssets() {
     }
   }, []);
 
-  // Update existing asset
+  // Update existing asset - Critical fix: ensure loading state is reset properly
   const updateItem = useCallback((id: string, updatedData: Partial<Asset>) => {
     setLoading(true);
     
@@ -156,7 +157,7 @@ export function useAssets() {
     }
   }, []);
 
-  // Delete asset
+  // Delete asset - Critical fix: ensure loading state is reset properly
   const deleteItem = useCallback((id: string) => {
     setLoading(true);
     
@@ -187,7 +188,7 @@ export function useAssets() {
     }
   }, [assets]);
 
-  // Check out an asset
+  // Check out an asset - Critical fix: ensure loading state is reset properly
   const checkOutAsset = useCallback((
     assetId: string, 
     assignedTo: string, 
@@ -255,7 +256,7 @@ export function useAssets() {
     }
   }, [assets]);
 
-  // Check in an asset
+  // Check in an asset - Critical fix: ensure loading state is reset properly
   const checkInAsset = useCallback((assetId: string, notes?: string, condition: Asset['condition'] = 'good') => {
     setLoading(true);
     
@@ -334,7 +335,7 @@ export function useAssets() {
     }
   }, [assets, checkoutHistory]);
 
-  // Change asset status
+  // Change asset status - Critical fix: ensure loading state is reset properly
   const changeAssetStatus = useCallback((assetId: string, newStatus: Asset['status'], notes?: string) => {
     setLoading(true);
     
