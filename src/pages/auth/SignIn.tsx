@@ -15,11 +15,13 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { HotelDepartment } from '@/types';
+import { toast } from 'sonner';
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState<HotelDepartment>('Front Office');
   const [showRoleSelection, setShowRoleSelection] = useState(false);
@@ -29,13 +31,15 @@ export default function SignIn() {
     e.preventDefault();
     try {
       if (showRoleSelection && selectedRole) {
-        await signIn(email, password, selectedRole, selectedDepartment, username);
+        const fullName = `${firstName} ${lastName}`.trim();
+        await signIn(email, password, selectedRole, selectedDepartment, fullName);
       } else {
         // First step - show role selection after email/password are entered
         setShowRoleSelection(true);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Sign in error:', error);
+      toast.error(error.message || 'Failed to sign in');
     }
   };
 
@@ -126,15 +130,30 @@ export default function SignIn() {
             ) : (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
+                  <Label htmlFor="firstName">First Name</Label>
                   <div className="relative">
                     <UserIcon className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                     <Input
-                      id="username"
+                      id="firstName"
                       type="text"
-                      placeholder="Your preferred username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="Your first name"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <div className="relative">
+                    <UserIcon className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      id="lastName"
+                      type="text"
+                      placeholder="Your last name"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
                       className="pl-10"
                       required
                     />
@@ -183,7 +202,7 @@ export default function SignIn() {
             <Button
               type="submit"
               className="w-full"
-              disabled={loading || (showRoleSelection && (!selectedRole || !username))}
+              disabled={loading || (showRoleSelection && (!selectedRole || !firstName || !lastName))}
             >
               {loading ? 'Signing in...' : showRoleSelection ? 'Complete Sign In' : 'Continue'}
             </Button>

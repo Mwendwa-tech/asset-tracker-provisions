@@ -10,7 +10,7 @@ import { Calendar, Download } from 'lucide-react';
 import { getReportContext } from '@/components/reports/ReportUtils';
 import { ReportData } from '@/types/reports';
 import { useReports } from '@/hooks/useReports';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 
 const Reports = () => {
   const { recentReports, loading, generateReport, reportTypes, scheduleReport } = useReports();
@@ -39,7 +39,10 @@ const Reports = () => {
         setReportId(reportId);
       } catch (error) {
         console.error("Error generating report:", error);
-        toast.error("Failed to generate report");
+        toast("Failed to generate report", { 
+          description: "An error occurred while generating the report",
+          style: { backgroundColor: 'red', color: 'white' } 
+        });
       }
     });
   }, [generateReport]);
@@ -49,12 +52,18 @@ const Reports = () => {
     try {
       const success = scheduleReport(id);
       if (success) {
-        toast.success('Report scheduled successfully');
+        toast("Report scheduled successfully", {
+          description: "The report will be generated automatically",
+          style: { backgroundColor: 'green', color: 'white' }
+        });
       }
       return success;
     } catch (error) {
       console.error("Error scheduling report:", error);
-      toast.error("Failed to schedule report");
+      toast("Failed to schedule report", {
+        description: "An error occurred while scheduling the report",
+        style: { backgroundColor: 'red', color: 'white' }
+      });
       return false;
     }
   }, [scheduleReport]);
@@ -69,7 +78,10 @@ const Reports = () => {
       if (success) scheduled++;
     });
     
-    toast.success(`${scheduled}/${total} reports scheduled successfully`);
+    toast(`${scheduled}/${total} reports scheduled successfully`, {
+      description: "Your scheduled reports are ready",
+      style: { backgroundColor: 'green', color: 'white' }
+    });
   }, [reportTypes, scheduleReport]);
 
   // Export report to CSV function
@@ -106,10 +118,16 @@ const Reports = () => {
       link.click();
       document.body.removeChild(link);
       
-      toast.success('Report exported successfully');
+      toast("Report exported successfully", {
+        description: "Your CSV file has been downloaded",
+        style: { backgroundColor: 'green', color: 'white' }
+      });
     } catch (error) {
       console.error("Error exporting report:", error);
-      toast.error("Failed to export report");
+      toast("Failed to export report", {
+        description: "An error occurred while exporting the report",
+        style: { backgroundColor: 'red', color: 'white' }
+      });
     }
   }, [reportData, reportTitle]);
 

@@ -16,7 +16,7 @@ type AuthContextType = {
   session: Session | null;
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string, role?: string, department?: HotelDepartment, username?: string) => Promise<void>;
+  signIn: (email: string, password: string, role?: string, department?: HotelDepartment, fullName?: string) => Promise<void>;
   signUp: (email: string, password: string, name: string, role?: string, department?: HotelDepartment) => Promise<void>;
   signOut: (userId?: string) => Promise<void>;
   initialized: boolean;
@@ -26,6 +26,14 @@ type AuthContextType = {
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+type UserAccount = {
+  email: string;
+  password: string;
+  name: string;
+  role: User['role'];
+  department: HotelDepartment;
+};
 
 const getRoleFromEmail = (email: string): User['role'] => {
   if (email.startsWith('gm') || email.startsWith('general')) {
@@ -86,6 +94,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [userAccounts, setUserAccounts] = useState<UserAccount[]>(() => {
+    const storedAccounts = localStorage.getItem('mock_user_accounts');
+    return storedAccounts ? JSON.parse(storedAccounts) : [];
+  });
 
   const [activeUsers, setActiveUsers] = useState<User[]>(() => {
     const storedUsers = localStorage.getItem('mock_active_users');
@@ -106,23 +118,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem('mock_active_users', JSON.stringify(updatedActiveUsers));
       }
     } else {
-      const demoUser: User = {
-        id: 'demo-id',
-        email: 'demo@lukenyagetaway.com',
-        name: 'Demo User',
-        role: 'generalManager',
-        department: 'Executive',
-        permissions: Object.values(Permission)
-      };
-      setUser(demoUser);
-      setSession({ user: demoUser });
-      localStorage.setItem('mock_user', JSON.stringify(demoUser));
-      
-      setActiveUsers([demoUser]);
-      localStorage.setItem('mock_active_users', JSON.stringify([demoUser]));
+      setInitialized(true);
     }
-    setInitialized(true);
-  }, []);
+    
+    localStorage.setItem('mock_user_accounts', JSON.stringify(userAccounts));
+  }, [userAccounts]);
+
+  useEffect(() => {
+    if (userAccounts.length > 0) {
+      localStorage.setItem('mock_user_accounts', JSON.stringify(userAccounts));
+    }
+  }, [userAccounts]);
 
   const hasPermission = (permission: Permission): boolean => {
     if (!user) return false;
@@ -143,18 +149,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return user?.role === 'generalManager';
   };
 
-  const signIn = async (email: string, password: string, role?: string, department?: HotelDepartment, username?: string) => {
+  const signIn = async (email: string, password: string, role?: string, department?: HotelDepartment, fullName?: string) => {
     setLoading(true);
+    
     try {
       setTimeout(() => {
-        // If role is provided, use it; otherwise, determine from email
-        const userRole = role || getRoleFromEmail(email);
-        const userDepartment = department || getDepartmentFromEmail(email);
+        const userAccount = userAccounts.find(account => account.email.toLowerCase() === email.toLowerCase());
+        
+        if (!userAccount) {
+          throw new Error("No account found with this email. Please sign up first.");
+        }
+        
+        if (userAccount.password !== password) {
+          throw new Error("Invalid password. Please try again.");
+        }
+        
+        const userRole = role || userAccount.role;
+        const userDepartment = department || userAccount.department;
+        const displayName = fullName || userAccount.name;
         
         const mockUser: User = { 
           id: `user-${Date.now()}`, 
           email, 
-          name: username || email.split('@')[0],
+          name: displayName,
           role: userRole as User['role'],
           department: userDepartment,
           permissions: userRole === 'generalManager' ? Object.values(Permission) : RolePermissions[userRole as User['role']]
@@ -170,7 +187,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         toast({
           title: 'Signed in successfully',
-          description: `Welcome back ${username ? username : ''}! You are signed in as ${userRole} in ${userDepartment}.`
+          description: `Welcome back ${displayName}! You are signed in as ${userRole} in ${userDepartment}.`
         });
       }, 500);
     } catch (error: any) {
@@ -179,6 +196,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: error.message || 'An error occurred during sign in',
         variant: 'destructive'
       });
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -188,12 +206,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       setTimeout(() => {
+        const existingUser = userAccounts.find(account => account.email.toLowerCase() === email.toLowerCase());
+        
+        if (existingUser) {
+          throw new Error("This email is already registered. Please sign in instead.");
+        }
+        
+        const newUserAccount: UserAccount = {
+          email,
+          password,
+          name,
+          role: role as User['role'],
+          department
+        };
+        
+        setUserAccounts(prev => [...prev, newUserAccount]);
+        
         const mockUser: User = { 
           id: `user-${Date.now()}`, 
           email, 
           name,
           role: role as User['role'],
-          department
+          department,
+          permissions: role === 'generalManager' ? Object.values(Permission) : RolePermissions[role as User['role']]
         };
         
         setUser(mockUser);
@@ -215,6 +250,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: error.message || 'An error occurred during sign up',
         variant: 'destructive'
       });
+      throw error;
     } finally {
       setLoading(false);
     }
