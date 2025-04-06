@@ -31,7 +31,8 @@ export function useAssets() {
     }
   });
   
-  const [summary, setSummary] = useState<AssetSummary>(getAssetSummary(mockAssets));
+  // Initialize with default summary - no arguments to getAssetSummary
+  const [summary, setSummary] = useState<AssetSummary>(getAssetSummary());
   
   const [checkoutHistory, setCheckoutHistory] = useState<CheckoutHistory[]>(() => {
     try {

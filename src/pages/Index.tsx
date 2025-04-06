@@ -22,30 +22,13 @@ const Dashboard = () => {
   const { summary: assetSummary } = useAssets();
 
   useEffect(() => {
-    // Set a maximum wait time to avoid infinite loading
-    const timeout = setTimeout(() => {
+    // Set loading to false after a short delay
+    const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1000);
+    }, 500);
     
-    // Check for data availability
-    if (inventorySummary && assetSummary) {
-      clearTimeout(timeout);
-      setIsLoading(false);
-    }
-    
-    return () => clearTimeout(timeout);
-  }, [inventorySummary, assetSummary]);
-
-  // Show simplified loading state if still loading
-  if (isLoading) {
-    return (
-      <MainLayout>
-        <div className="flex h-full w-full items-center justify-center py-12">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-        </div>
-      </MainLayout>
-    );
-  }
+    return () => clearTimeout(timer);
+  }, []);
 
   // Default to empty values if data is missing
   const inventory = inventorySummary || { 
@@ -65,6 +48,17 @@ const Dashboard = () => {
   };
   
   const alerts = lowStockAlerts || [];
+
+  // Show simplified loading state if still loading
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="flex h-full w-full items-center justify-center py-12">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
