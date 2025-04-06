@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { 
   Asset, 
@@ -30,7 +31,7 @@ export function useAssets() {
     }
   });
   
-  // Fix: no arguments for getAssetSummary
+  // Fixed: call getAssetSummary() with no arguments
   const [summary, setSummary] = useState<AssetSummary>(() => getAssetSummary());
   
   const [checkoutHistory, setCheckoutHistory] = useState<CheckoutHistory[]>(() => {

@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useInventory } from '@/hooks/useInventory';
 import { useAssets } from '@/hooks/useAssets';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 // Default values for when data is still loading
 const defaultInventory = { 
@@ -31,33 +31,14 @@ const defaultAssets = {
 };
 
 const Dashboard = () => {
-  const [isReady, setIsReady] = useState(false);
-  
-  // Use the hooks to get data
+  // Use the hooks to get data - no loading/isReady state needed anymore
   const { summary: inventorySummary, lowStockAlerts } = useInventory();
   const { summary: assetSummary } = useAssets();
   
-  // Set loading state without setTimeout to avoid unnecessary delays
-  useEffect(() => {
-    // We can assume data is ready since the hooks load immediately now
-    setIsReady(true);
-  }, []);
-
   // Provide default values when data is missing
   const inventory = inventorySummary || defaultInventory;
   const assets = assetSummary || defaultAssets;
   const alerts = lowStockAlerts || [];
-
-  // Show simplified loading state if still loading
-  if (!isReady) {
-    return (
-      <MainLayout>
-        <div className="flex h-full w-full items-center justify-center py-12">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-        </div>
-      </MainLayout>
-    );
-  }
 
   return (
     <MainLayout>
