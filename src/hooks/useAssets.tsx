@@ -19,17 +19,6 @@ const STORAGE_KEYS = {
   CHECKOUT_HISTORY: 'hostel-checkout-history'
 };
 
-// Debounced localStorage save function to improve performance
-const useDebounceStorage = (key: string, data: any) => {
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      localStorage.setItem(key, JSON.stringify(data));
-    }, 100); // Short delay for better performance
-
-    return () => clearTimeout(handler);
-  }, [key, data]);
-};
-
 export function useAssets() {
   // Initialize state with data from localStorage or mock data
   const [assets, setAssets] = useState<Asset[]>(() => {
@@ -42,7 +31,7 @@ export function useAssets() {
     }
   });
   
-  const [summary, setSummary] = useState<AssetSummary>(getAssetSummary());
+  const [summary, setSummary] = useState<AssetSummary>(getAssetSummary(mockAssets));
   
   const [checkoutHistory, setCheckoutHistory] = useState<CheckoutHistory[]>(() => {
     try {
@@ -56,11 +45,24 @@ export function useAssets() {
   
   const [loading, setLoading] = useState(false);
 
-  // Use debounced storage for performance
-  useDebounceStorage(STORAGE_KEYS.ASSETS, assets);
-  useDebounceStorage(STORAGE_KEYS.CHECKOUT_HISTORY, checkoutHistory);
+  // Save to localStorage whenever data changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.ASSETS, JSON.stringify(assets));
+    } catch (error) {
+      console.error("Error saving assets to localStorage:", error);
+    }
+  }, [assets]);
 
-  // Memoize summary calculation for better performance
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.CHECKOUT_HISTORY, JSON.stringify(checkoutHistory));
+    } catch (error) {
+      console.error("Error saving checkout history to localStorage:", error);
+    }
+  }, [checkoutHistory]);
+
+  // Calculate summary 
   const calculateSummary = useCallback((assetItems: Asset[]): AssetSummary => {
     const categories: Record<string, number> = {};
     let available = 0;
@@ -91,19 +93,13 @@ export function useAssets() {
     };
   }, []);
 
-  // Update summary whenever assets change - with optimized performance
+  // Update summary whenever assets change
   useEffect(() => {
     try {
-      // Use requestAnimationFrame for smoother UI updates
-      const updateFrame = requestAnimationFrame(() => {
-        const newSummary = calculateSummary(assets);
-        setSummary(newSummary);
-      });
-      
-      return () => cancelAnimationFrame(updateFrame);
+      const newSummary = calculateSummary(assets);
+      setSummary(newSummary);
     } catch (error) {
       console.error("Error calculating summary:", error);
-      // Don't let the app crash if summary calculation fails
     }
   }, [assets, calculateSummary]);
 
@@ -112,7 +108,6 @@ export function useAssets() {
     setLoading(true);
     
     try {
-      // Create the asset with immediate UI update
       const assetToAdd: Asset = {
         ...newAsset,
         id: generateId()
@@ -125,7 +120,6 @@ export function useAssets() {
         description: `${assetToAdd.name} has been added to the asset registry.`,
       });
       
-      setLoading(false);
       return assetToAdd;
     } catch (error) {
       console.error('Error adding asset:', error);
@@ -134,8 +128,9 @@ export function useAssets() {
         description: 'Failed to add asset. Please try again.',
         variant: 'destructive'
       });
-      setLoading(false);
       return null;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -144,7 +139,6 @@ export function useAssets() {
     setLoading(true);
     
     try {
-      // Update with immediate UI change
       setAssets(currentAssets => 
         currentAssets.map(asset => 
           asset.id === id 
@@ -158,7 +152,6 @@ export function useAssets() {
         description: 'Asset has been updated successfully.',
       });
       
-      setLoading(false);
       return true;
     } catch (error) {
       console.error('Error updating asset:', error);
@@ -167,8 +160,9 @@ export function useAssets() {
         description: 'Failed to update asset. Please try again.',
         variant: 'destructive'
       });
-      setLoading(false);
       return false;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -179,7 +173,6 @@ export function useAssets() {
     try {
       const assetToDelete = assets.find(asset => asset.id === id);
       
-      // Delete with immediate UI update
       setAssets(currentAssets => currentAssets.filter(asset => asset.id !== id));
       
       if (assetToDelete) {
@@ -189,7 +182,6 @@ export function useAssets() {
         });
       }
       
-      setLoading(false);
       return true;
     } catch (error) {
       console.error('Error deleting asset:', error);
@@ -198,8 +190,9 @@ export function useAssets() {
         description: 'Failed to delete asset. Please try again.',
         variant: 'destructive'
       });
-      setLoading(false);
       return false;
+    } finally {
+      setLoading(false);
     }
   }, [assets]);
 
@@ -216,12 +209,10 @@ export function useAssets() {
       const asset = assets.find(a => a.id === assetId);
       
       if (!asset) {
-        setLoading(false);
         throw new Error('Asset not found');
       }
       
       if (asset.status !== 'available') {
-        setLoading(false);
         throw new Error('Asset is not available for checkout');
       }
       
@@ -256,7 +247,6 @@ export function useAssets() {
         description: `${asset.name} has been checked out to ${assignedTo}.`,
       });
       
-      setLoading(false);
       return newCheckout;
     } catch (error) {
       console.error('Error checking out asset:', error);
@@ -265,8 +255,9 @@ export function useAssets() {
         description: error instanceof Error ? error.message : 'Failed to check out asset. Please try again.',
         variant: 'destructive'
       });
-      setLoading(false);
       return null;
+    } finally {
+      setLoading(false);
     }
   }, [assets]);
 
@@ -278,12 +269,10 @@ export function useAssets() {
       const asset = assets.find(a => a.id === assetId);
       
       if (!asset) {
-        setLoading(false);
         throw new Error('Asset not found');
       }
       
       if (asset.status !== 'checked-out') {
-        setLoading(false);
         throw new Error('Asset is not checked out');
       }
       
@@ -337,7 +326,6 @@ export function useAssets() {
           : `${asset.name} has been sent to maintenance.`,
       });
       
-      setLoading(false);
       return true;
     } catch (error) {
       console.error('Error checking in asset:', error);
@@ -346,8 +334,9 @@ export function useAssets() {
         description: error instanceof Error ? error.message : 'Failed to check in asset. Please try again.',
         variant: 'destructive'
       });
-      setLoading(false);
       return false;
+    } finally {
+      setLoading(false);
     }
   }, [assets, checkoutHistory]);
 
@@ -359,13 +348,11 @@ export function useAssets() {
       const asset = assets.find(a => a.id === assetId);
       
       if (!asset) {
-        setLoading(false);
         throw new Error('Asset not found');
       }
       
       // Prevent invalid transitions
       if (asset.status === 'checked-out' && newStatus !== 'available') {
-        setLoading(false);
         throw new Error('Checked-out assets must be checked in before changing to other statuses');
       }
       
@@ -392,7 +379,6 @@ export function useAssets() {
         description: `${asset.name} status changed to ${newStatus}.`,
       });
       
-      setLoading(false);
       return true;
     } catch (error) {
       console.error('Error changing asset status:', error);
@@ -401,8 +387,9 @@ export function useAssets() {
         description: error instanceof Error ? error.message : 'Failed to change asset status. Please try again.',
         variant: 'destructive'
       });
-      setLoading(false);
       return false;
+    } finally {
+      setLoading(false);
     }
   }, [assets]);
 

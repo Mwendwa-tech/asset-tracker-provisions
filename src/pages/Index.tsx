@@ -21,14 +21,22 @@ const Dashboard = () => {
   const { summary: inventorySummary, lowStockAlerts } = useInventory();
   const { summary: assetSummary } = useAssets();
 
-  // Set loading to false after data is loaded
   useEffect(() => {
+    // Set a maximum wait time to avoid infinite loading
+    const timeout = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+    
+    // Check for data availability
     if (inventorySummary && assetSummary) {
+      clearTimeout(timeout);
       setIsLoading(false);
     }
+    
+    return () => clearTimeout(timeout);
   }, [inventorySummary, assetSummary]);
 
-  // Show loading state if still loading
+  // Show simplified loading state if still loading
   if (isLoading) {
     return (
       <MainLayout>
@@ -38,6 +46,25 @@ const Dashboard = () => {
       </MainLayout>
     );
   }
+
+  // Default to empty values if data is missing
+  const inventory = inventorySummary || { 
+    totalItems: 0, 
+    lowStockItems: 0, 
+    totalValue: 0,
+    categories: []
+  };
+  
+  const assets = assetSummary || {
+    totalAssets: 0,
+    available: 0,
+    checkedOut: 0,
+    maintenance: 0,
+    totalValue: 0,
+    categories: []
+  };
+  
+  const alerts = lowStockAlerts || [];
 
   return (
     <MainLayout>
@@ -55,28 +82,28 @@ const Dashboard = () => {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Inventory Items"
-            value={inventorySummary.totalItems}
+            value={inventory.totalItems}
             description="Across all categories"
             icon={<Package />}
             className="bg-blue-50 dark:bg-blue-950"
           />
           <StatCard
             title="Low Stock Items"
-            value={lowStockAlerts.length}
+            value={alerts.length}
             description="Need attention"
             icon={<AlertTriangle />}
             className="bg-amber-50 dark:bg-amber-950"
           />
           <StatCard
             title="Total Assets"
-            value={assetSummary.totalAssets}
+            value={assets.totalAssets}
             description="Available and in use"
             icon={<Briefcase />}
             className="bg-green-50 dark:bg-green-950"
           />
           <StatCard
             title="Total Value"
-            value={formatCurrency(inventorySummary.totalValue + assetSummary.totalValue)}
+            value={formatCurrency(inventory.totalValue + assets.totalValue)}
             description="Combined inventory & assets"
             icon={<BarChart3 />}
             className="bg-purple-50 dark:bg-purple-950"
@@ -84,9 +111,9 @@ const Dashboard = () => {
         </div>
 
         <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <InventorySummary data={inventorySummary} />
-          <AssetSummary data={assetSummary} />
-          <LowStockAlerts data={lowStockAlerts} />
+          <InventorySummary data={inventory} />
+          <AssetSummary data={assets} />
+          <LowStockAlerts data={alerts} />
         </div>
       </div>
     </MainLayout>

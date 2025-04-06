@@ -33,8 +33,8 @@ export function useInventory() {
     }
   });
   
-  const [summary, setSummary] = useState<InventorySummary>(getInventorySummary());
-  const [lowStockAlerts, setLowStockAlerts] = useState<LowStockAlert[]>(getLowStockAlerts());
+  const [summary, setSummary] = useState<InventorySummary>(getInventorySummary(mockInventoryItems));
+  const [lowStockAlerts, setLowStockAlerts] = useState<LowStockAlert[]>(getLowStockAlerts(mockInventoryItems));
   
   const [transactions, setTransactions] = useState<StockTransaction[]>(() => {
     try {
@@ -134,22 +134,23 @@ export function useInventory() {
       setItems(currentItems => [...currentItems, itemToAdd]);
       
       // Record transaction
-      addTransaction({
+      const newTransaction = {
+        id: generateId(),
         itemId: itemToAdd.id,
         itemName: itemToAdd.name,
-        type: 'received',
+        type: 'received' as const,
         quantity: itemToAdd.quantity,
         performedBy: 'Current User',
-        notes: 'Initial inventory setup'
-      });
+        notes: 'Initial inventory setup',
+        date: new Date()
+      };
+      
+      setTransactions(current => [newTransaction, ...current]);
       
       toast({
         title: 'Item added',
         description: `${itemToAdd.name} has been added to inventory.`,
       });
-      
-      setLoading(false);
-      return itemToAdd;
     } catch (error) {
       console.error('Error adding item:', error);
       toast({
@@ -157,8 +158,8 @@ export function useInventory() {
         description: 'Failed to add item. Please try again.',
         variant: 'destructive'
       });
+    } finally {
       setLoading(false);
-      return null;
     }
   }, []);
 
@@ -179,8 +180,6 @@ export function useInventory() {
         title: 'Item updated',
         description: 'Inventory item has been updated successfully.',
       });
-      
-      setLoading(false);
       return true;
     } catch (error) {
       console.error('Error updating item:', error);
@@ -189,8 +188,9 @@ export function useInventory() {
         description: 'Failed to update item. Please try again.',
         variant: 'destructive'
       });
-      setLoading(false);
       return false;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -209,8 +209,6 @@ export function useInventory() {
           description: `${itemToDelete.name} has been removed from inventory.`,
         });
       }
-      
-      setLoading(false);
       return true;
     } catch (error) {
       console.error('Error deleting item:', error);
@@ -219,12 +217,13 @@ export function useInventory() {
         description: 'Failed to delete item. Please try again.',
         variant: 'destructive'
       });
-      setLoading(false);
       return false;
+    } finally {
+      setLoading(false);
     }
   }, [items]);
 
-  // Add a stock transaction - implemented safely without setTimeout
+  // Add a stock transaction
   const addTransaction = useCallback((transaction: Omit<StockTransaction, 'id' | 'date'>) => {
     try {
       const newTransaction: StockTransaction = {
@@ -255,10 +254,13 @@ export function useInventory() {
         }
         
         // Update the item
-        updateItem(updatedItem.id, {
-          quantity: updatedItem.quantity,
-          lastUpdated: new Date()
-        });
+        setItems(currentItems => 
+          currentItems.map(item => 
+            item.id === updatedItem.id 
+              ? { ...item, quantity: updatedItem.quantity, lastUpdated: new Date() } 
+              : item
+          )
+        );
       }
       
       return newTransaction;
@@ -271,7 +273,7 @@ export function useInventory() {
       });
       return null;
     }
-  }, [items, updateItem]);
+  }, [items]);
 
   return {
     items,
