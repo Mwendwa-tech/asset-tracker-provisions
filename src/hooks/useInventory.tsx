@@ -33,9 +33,9 @@ export function useInventory() {
     }
   });
   
-  // Fix: no arguments for these functions
-  const [summary, setSummary] = useState<InventorySummary>(getInventorySummary());
-  const [lowStockAlerts, setLowStockAlerts] = useState<LowStockAlert[]>(getLowStockAlerts());
+  // Fix: no arguments for these functions - they expect 0 arguments
+  const [summary, setSummary] = useState<InventorySummary>(() => getInventorySummary());
+  const [lowStockAlerts, setLowStockAlerts] = useState<LowStockAlert[]>(() => getLowStockAlerts());
   
   const [transactions, setTransactions] = useState<StockTransaction[]>(() => {
     try {

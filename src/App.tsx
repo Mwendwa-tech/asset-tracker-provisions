@@ -26,23 +26,73 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 0, // Don't retry failed queries to avoid infinite loading
+      retry: 1, // Only retry once to avoid unnecessary waiting
       refetchOnWindowFocus: false,
       staleTime: 1000 * 60, // 1 minute
     },
   },
 });
 
-// Simplified loading spinner
-const LoadingSpinner = () => (
-  <div className="flex h-screen w-full items-center justify-center">
-    <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-  </div>
-);
+// Simplified loading spinner with timeout to prevent infinite loading
+const LoadingSpinner = () => {
+  const [showFallbackMessage, setShowFallbackMessage] = useState(false);
+  
+  useEffect(() => {
+    // If loading takes too long, show a message
+    const timeout = setTimeout(() => {
+      setShowFallbackMessage(true);
+    }, 5000);
+    
+    return () => clearTimeout(timeout);
+  }, []);
+  
+  return (
+    <div className="flex h-screen w-full flex-col items-center justify-center">
+      <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      {showFallbackMessage && (
+        <div className="mt-4 text-center">
+          <p className="text-sm text-gray-500">Taking longer than expected...</p>
+          <p className="text-xs text-gray-400">Try refreshing the page if this continues.</p>
+        </div>
+      )}
+    </div>
+  );
+};
 
-// Protected route component
+// Protected route component with better timeout handling
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, initialized } = useAuth();
+  const [timeoutError, setTimeoutError] = useState(false);
+  
+  useEffect(() => {
+    // Set a timeout to handle potential infinite loading
+    const timeout = setTimeout(() => {
+      if (loading && !initialized) {
+        setTimeoutError(true);
+        console.error("Authentication initialization timeout");
+      }
+    }, 3000);
+    
+    return () => clearTimeout(timeout);
+  }, [loading, initialized]);
+  
+  // Show error state if initialization takes too long
+  if (timeoutError) {
+    return (
+      <div className="flex h-screen w-full flex-col items-center justify-center p-4">
+        <div className="rounded-lg border bg-white p-6 shadow-md dark:bg-gray-800">
+          <h2 className="mb-2 text-xl font-bold">Unable to authenticate</h2>
+          <p className="mb-4 text-gray-500">Please try refreshing the page.</p>
+          <button 
+            className="rounded bg-primary px-4 py-2 text-white"
+            onClick={() => window.location.reload()}
+          >
+            Refresh Page
+          </button>
+        </div>
+      </div>
+    );
+  }
   
   // Show loading spinner while checking authentication
   if (loading || !initialized) {
@@ -61,7 +111,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// App initialization no longer needs a delay to initialize
+// App component with simplified initialization
 const App = () => (
   <ThemeProvider defaultTheme="system" storageKey="theme">
     <QueryClientProvider client={queryClient}>

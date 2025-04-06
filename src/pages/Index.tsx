@@ -13,44 +13,43 @@ import { useInventory } from '@/hooks/useInventory';
 import { useAssets } from '@/hooks/useAssets';
 import { useState, useEffect } from 'react';
 
+// Default values for when data is still loading
+const defaultInventory = { 
+  totalItems: 0, 
+  lowStockItems: 0, 
+  totalValue: 0,
+  categories: []
+};
+
+const defaultAssets = {
+  totalAssets: 0,
+  available: 0,
+  checkedOut: 0,
+  maintenance: 0,
+  totalValue: 0,
+  categories: []
+};
+
 const Dashboard = () => {
-  // Track loading state
-  const [isLoading, setIsLoading] = useState(true);
+  const [isReady, setIsReady] = useState(false);
   
-  // Use the hooks instead of direct mock data
+  // Use the hooks to get data
   const { summary: inventorySummary, lowStockAlerts } = useInventory();
   const { summary: assetSummary } = useAssets();
-
+  
+  // Set loading state without setTimeout to avoid unnecessary delays
   useEffect(() => {
-    // Set loading to false after a short delay
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
-    
-    return () => clearTimeout(timer);
+    // We can assume data is ready since the hooks load immediately now
+    setIsReady(true);
   }, []);
 
-  // Default to empty values if data is missing
-  const inventory = inventorySummary || { 
-    totalItems: 0, 
-    lowStockItems: 0, 
-    totalValue: 0,
-    categories: []
-  };
-  
-  const assets = assetSummary || {
-    totalAssets: 0,
-    available: 0,
-    checkedOut: 0,
-    maintenance: 0,
-    totalValue: 0,
-    categories: []
-  };
-  
+  // Provide default values when data is missing
+  const inventory = inventorySummary || defaultInventory;
+  const assets = assetSummary || defaultAssets;
   const alerts = lowStockAlerts || [];
 
   // Show simplified loading state if still loading
-  if (isLoading) {
+  if (!isReady) {
     return (
       <MainLayout>
         <div className="flex h-full w-full items-center justify-center py-12">
