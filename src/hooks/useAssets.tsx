@@ -33,15 +33,25 @@ const useDebounceStorage = (key: string, data: any) => {
 export function useAssets() {
   // Initialize state with data from localStorage or mock data
   const [assets, setAssets] = useState<Asset[]>(() => {
-    const savedAssets = localStorage.getItem(STORAGE_KEYS.ASSETS);
-    return savedAssets ? JSON.parse(savedAssets) : mockAssets;
+    try {
+      const savedAssets = localStorage.getItem(STORAGE_KEYS.ASSETS);
+      return savedAssets ? JSON.parse(savedAssets) : mockAssets;
+    } catch (error) {
+      console.error("Error loading assets from localStorage:", error);
+      return mockAssets;
+    }
   });
   
   const [summary, setSummary] = useState<AssetSummary>(getAssetSummary());
   
   const [checkoutHistory, setCheckoutHistory] = useState<CheckoutHistory[]>(() => {
-    const savedHistory = localStorage.getItem(STORAGE_KEYS.CHECKOUT_HISTORY);
-    return savedHistory ? JSON.parse(savedHistory) : mockCheckoutHistory;
+    try {
+      const savedHistory = localStorage.getItem(STORAGE_KEYS.CHECKOUT_HISTORY);
+      return savedHistory ? JSON.parse(savedHistory) : mockCheckoutHistory;
+    } catch (error) {
+      console.error("Error loading checkout history from localStorage:", error);
+      return mockCheckoutHistory;
+    }
   });
   
   const [loading, setLoading] = useState(false);
@@ -83,13 +93,18 @@ export function useAssets() {
 
   // Update summary whenever assets change - with optimized performance
   useEffect(() => {
-    // Use requestAnimationFrame for smoother UI updates
-    const updateFrame = requestAnimationFrame(() => {
-      const newSummary = calculateSummary(assets);
-      setSummary(newSummary);
-    });
-    
-    return () => cancelAnimationFrame(updateFrame);
+    try {
+      // Use requestAnimationFrame for smoother UI updates
+      const updateFrame = requestAnimationFrame(() => {
+        const newSummary = calculateSummary(assets);
+        setSummary(newSummary);
+      });
+      
+      return () => cancelAnimationFrame(updateFrame);
+    } catch (error) {
+      console.error("Error calculating summary:", error);
+      // Don't let the app crash if summary calculation fails
+    }
   }, [assets, calculateSummary]);
 
   // Add new asset
@@ -234,10 +249,7 @@ export function useAssets() {
         notes
       };
       
-      setCheckoutHistory(current => {
-        const updatedHistory = [newCheckout, ...current];
-        return updatedHistory;
-      });
+      setCheckoutHistory(current => [newCheckout, ...current]);
       
       toast({
         title: 'Asset checked out',

@@ -5,18 +5,39 @@ import { StatCard } from '@/components/common/StatCard';
 import { InventorySummary } from '@/components/dashboard/InventorySummary';
 import { AssetSummary } from '@/components/dashboard/AssetSummary';
 import { LowStockAlerts } from '@/components/dashboard/LowStockAlert';
-import { getAssetSummary } from '@/utils/mockData';
 import { formatCurrency } from '@/utils/formatters';
 import { Package, Briefcase, AlertTriangle, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useInventory } from '@/hooks/useInventory';
 import { useAssets } from '@/hooks/useAssets';
+import { useState, useEffect } from 'react';
 
 const Dashboard = () => {
+  // Track loading state
+  const [isLoading, setIsLoading] = useState(true);
+  
   // Use the hooks instead of direct mock data
   const { summary: inventorySummary, lowStockAlerts } = useInventory();
   const { summary: assetSummary } = useAssets();
+
+  // Set loading to false after data is loaded
+  useEffect(() => {
+    if (inventorySummary && assetSummary) {
+      setIsLoading(false);
+    }
+  }, [inventorySummary, assetSummary]);
+
+  // Show loading state if still loading
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="flex h-full w-full items-center justify-center py-12">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>

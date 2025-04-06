@@ -6,20 +6,37 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { NotificationProvider } from "@/components/ui/NotificationCenter";
-import Dashboard from "./pages/Index";
-import Inventory from "./pages/Inventory";
-import Assets from "./pages/Assets";
-import Reports from "./pages/Reports";
-import Suppliers from "./pages/Suppliers";
-import Users from "./pages/Users";
-import Settings from "./pages/Settings";
-import Requests from "./pages/Requests";
-import NotFound from "./pages/NotFound";
+import { Suspense, lazy } from "react";
 import SignIn from "./pages/auth/SignIn";
 import SignUp from "./pages/auth/SignUp";
 import { ThemeProvider } from "./components/theme-provider";
 
-const queryClient = new QueryClient();
+// Lazy load pages to improve initial load time
+const Dashboard = lazy(() => import("./pages/Index"));
+const Inventory = lazy(() => import("./pages/Inventory"));
+const Assets = lazy(() => import("./pages/Assets"));
+const Reports = lazy(() => import("./pages/Reports"));
+const Suppliers = lazy(() => import("./pages/Suppliers"));
+const Users = lazy(() => import("./pages/Users"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Requests = lazy(() => import("./pages/Requests"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+// Loading component
+const LoadingSpinner = () => (
+  <div className="flex h-screen w-full items-center justify-center">
+    <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+  </div>
+);
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -27,9 +44,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   // Show nothing while checking authentication
   if (!initialized || loading) {
-    return <div className="flex h-screen w-full items-center justify-center">
-      <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-    </div>;
+    return <LoadingSpinner />;
   }
   
   // Redirect to sign-in if not authenticated
@@ -38,9 +53,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
   
   return (
-    <>
+    <Suspense fallback={<LoadingSpinner />}>
       {children}
-    </>
+    </Suspense>
   );
 };
 

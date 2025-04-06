@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   InventoryItem, 
   InventorySummary, 
@@ -24,40 +24,49 @@ const STORAGE_KEYS = {
 export function useInventory() {
   // Initialize state with data from localStorage or mock data
   const [items, setItems] = useState<InventoryItem[]>(() => {
-    const savedItems = localStorage.getItem(STORAGE_KEYS.INVENTORY_ITEMS);
-    return savedItems ? JSON.parse(savedItems) : mockInventoryItems;
+    try {
+      const savedItems = localStorage.getItem(STORAGE_KEYS.INVENTORY_ITEMS);
+      return savedItems ? JSON.parse(savedItems) : mockInventoryItems;
+    } catch (error) {
+      console.error("Error loading inventory from localStorage:", error);
+      return mockInventoryItems;
+    }
   });
   
   const [summary, setSummary] = useState<InventorySummary>(getInventorySummary());
   const [lowStockAlerts, setLowStockAlerts] = useState<LowStockAlert[]>(getLowStockAlerts());
   
   const [transactions, setTransactions] = useState<StockTransaction[]>(() => {
-    const savedTransactions = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
-    return savedTransactions ? JSON.parse(savedTransactions) : mockStockTransactions;
+    try {
+      const savedTransactions = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
+      return savedTransactions ? JSON.parse(savedTransactions) : mockStockTransactions;
+    } catch (error) {
+      console.error("Error loading transactions from localStorage:", error);
+      return mockStockTransactions;
+    }
   });
   
   const [loading, setLoading] = useState(false);
 
   // Save to localStorage whenever items or transactions change
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.INVENTORY_ITEMS, JSON.stringify(items));
+    try {
+      localStorage.setItem(STORAGE_KEYS.INVENTORY_ITEMS, JSON.stringify(items));
+    } catch (error) {
+      console.error("Error saving inventory to localStorage:", error);
+    }
   }, [items]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
+    try {
+      localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
+    } catch (error) {
+      console.error("Error saving transactions to localStorage:", error);
+    }
   }, [transactions]);
 
-  // Update summary and alerts whenever items change
-  useEffect(() => {
-    const newSummary = calculateSummary(items);
-    const newAlerts = calculateLowStockAlerts(items);
-    
-    setSummary(newSummary);
-    setLowStockAlerts(newAlerts);
-  }, [items]);
-
-  // Calculate inventory summary
-  const calculateSummary = (inventoryItems: InventoryItem[]): InventorySummary => {
+  // Calculate inventory summary - memoized for performance
+  const calculateSummary = useCallback((inventoryItems: InventoryItem[]): InventorySummary => {
     const categories: Record<string, number> = {};
     let totalValue = 0;
     let lowStockItems = 0;
@@ -81,10 +90,10 @@ export function useInventory() {
       lowStockItems,
       totalValue
     };
-  };
+  }, []);
 
   // Calculate low stock alerts
-  const calculateLowStockAlerts = (inventoryItems: InventoryItem[]): LowStockAlert[] => {
+  const calculateLowStockAlerts = useCallback((inventoryItems: InventoryItem[]): LowStockAlert[] => {
     return inventoryItems
       .filter(item => item.quantity <= item.minStockLevel)
       .map(item => ({
@@ -95,43 +104,52 @@ export function useInventory() {
         minStockLevel: item.minStockLevel,
         unit: item.unit
       }));
-  };
+  }, []);
 
-  // Add new inventory item
-  const addItem = (newItem: Omit<InventoryItem, 'id' | 'lastUpdated'>) => {
+  // Update summary and alerts whenever items change
+  useEffect(() => {
+    try {
+      const newSummary = calculateSummary(items);
+      const newAlerts = calculateLowStockAlerts(items);
+      
+      setSummary(newSummary);
+      setLowStockAlerts(newAlerts);
+    } catch (error) {
+      console.error("Error updating inventory summary:", error);
+      // Don't let the app crash if summary calculation fails
+    }
+  }, [items, calculateSummary, calculateLowStockAlerts]);
+
+  // Add new inventory item with safe implementation
+  const addItem = useCallback((newItem: Omit<InventoryItem, 'id' | 'lastUpdated'>) => {
     setLoading(true);
     
     try {
-      // In a real app, this would be an API call
-      setTimeout(() => {
-        const itemToAdd: InventoryItem = {
-          ...newItem,
-          id: generateId(),
-          lastUpdated: new Date()
-        };
-        
-        setItems(currentItems => {
-          const updatedItems = [...currentItems, itemToAdd];
-          return updatedItems;
-        });
-        
-        // Record transaction
-        addTransaction({
-          itemId: itemToAdd.id,
-          itemName: itemToAdd.name,
-          type: 'received',
-          quantity: itemToAdd.quantity,
-          performedBy: 'Current User', // In a real app, this would be the logged-in user
-          notes: 'Initial inventory setup'
-        });
-        
-        toast({
-          title: 'Item added',
-          description: `${itemToAdd.name} has been added to inventory.`,
-        });
-        
-        setLoading(false);
-      }, 500);
+      const itemToAdd: InventoryItem = {
+        ...newItem,
+        id: generateId(),
+        lastUpdated: new Date()
+      };
+      
+      setItems(currentItems => [...currentItems, itemToAdd]);
+      
+      // Record transaction
+      addTransaction({
+        itemId: itemToAdd.id,
+        itemName: itemToAdd.name,
+        type: 'received',
+        quantity: itemToAdd.quantity,
+        performedBy: 'Current User',
+        notes: 'Initial inventory setup'
+      });
+      
+      toast({
+        title: 'Item added',
+        description: `${itemToAdd.name} has been added to inventory.`,
+      });
+      
+      setLoading(false);
+      return itemToAdd;
     } catch (error) {
       console.error('Error adding item:', error);
       toast({
@@ -140,31 +158,30 @@ export function useInventory() {
         variant: 'destructive'
       });
       setLoading(false);
+      return null;
     }
-  };
+  }, []);
 
   // Update existing inventory item
-  const updateItem = (id: string, updatedData: Partial<InventoryItem>) => {
+  const updateItem = useCallback((id: string, updatedData: Partial<InventoryItem>) => {
     setLoading(true);
     
     try {
-      // In a real app, this would be an API call
-      setTimeout(() => {
-        setItems(currentItems => 
-          currentItems.map(item => 
-            item.id === id 
-              ? { ...item, ...updatedData, lastUpdated: new Date() } 
-              : item
-          )
-        );
-        
-        toast({
-          title: 'Item updated',
-          description: 'Inventory item has been updated successfully.',
-        });
-        
-        setLoading(false);
-      }, 500);
+      setItems(currentItems => 
+        currentItems.map(item => 
+          item.id === id 
+            ? { ...item, ...updatedData, lastUpdated: new Date() } 
+            : item
+        )
+      );
+      
+      toast({
+        title: 'Item updated',
+        description: 'Inventory item has been updated successfully.',
+      });
+      
+      setLoading(false);
+      return true;
     } catch (error) {
       console.error('Error updating item:', error);
       toast({
@@ -173,29 +190,28 @@ export function useInventory() {
         variant: 'destructive'
       });
       setLoading(false);
+      return false;
     }
-  };
+  }, []);
 
   // Delete inventory item
-  const deleteItem = (id: string) => {
+  const deleteItem = useCallback((id: string) => {
     setLoading(true);
     
     try {
-      // In a real app, this would be an API call
-      setTimeout(() => {
-        const itemToDelete = items.find(item => item.id === id);
-        
-        setItems(currentItems => currentItems.filter(item => item.id !== id));
-        
-        if (itemToDelete) {
-          toast({
-            title: 'Item deleted',
-            description: `${itemToDelete.name} has been removed from inventory.`,
-          });
-        }
-        
-        setLoading(false);
-      }, 500);
+      const itemToDelete = items.find(item => item.id === id);
+      
+      setItems(currentItems => currentItems.filter(item => item.id !== id));
+      
+      if (itemToDelete) {
+        toast({
+          title: 'Item deleted',
+          description: `${itemToDelete.name} has been removed from inventory.`,
+        });
+      }
+      
+      setLoading(false);
+      return true;
     } catch (error) {
       console.error('Error deleting item:', error);
       toast({
@@ -204,50 +220,58 @@ export function useInventory() {
         variant: 'destructive'
       });
       setLoading(false);
+      return false;
     }
-  };
+  }, [items]);
 
-  // Add a stock transaction
-  const addTransaction = (transaction: Omit<StockTransaction, 'id' | 'date'>) => {
-    const newTransaction: StockTransaction = {
-      ...transaction,
-      id: generateId(),
-      date: new Date()
-    };
-    
-    setTransactions(current => {
-      const updatedTransactions = [newTransaction, ...current];
-      return updatedTransactions;
-    });
-    
-    // Update item quantity based on transaction
-    const itemToUpdate = items.find(item => item.id === transaction.itemId);
-    
-    if (itemToUpdate) {
-      const updatedItem = { ...itemToUpdate };
+  // Add a stock transaction - implemented safely without setTimeout
+  const addTransaction = useCallback((transaction: Omit<StockTransaction, 'id' | 'date'>) => {
+    try {
+      const newTransaction: StockTransaction = {
+        ...transaction,
+        id: generateId(),
+        date: new Date()
+      };
       
-      switch (transaction.type) {
-        case 'received':
-          updatedItem.quantity += transaction.quantity;
-          break;
-        case 'used':
-        case 'expired':
-          updatedItem.quantity = Math.max(0, updatedItem.quantity - transaction.quantity);
-          break;
-        case 'adjusted':
-          updatedItem.quantity = Math.max(0, updatedItem.quantity + transaction.quantity);
-          break;
+      setTransactions(current => [newTransaction, ...current]);
+      
+      // Update item quantity based on transaction
+      const itemToUpdate = items.find(item => item.id === transaction.itemId);
+      
+      if (itemToUpdate) {
+        const updatedItem = { ...itemToUpdate };
+        
+        switch (transaction.type) {
+          case 'received':
+            updatedItem.quantity += transaction.quantity;
+            break;
+          case 'used':
+          case 'expired':
+            updatedItem.quantity = Math.max(0, updatedItem.quantity - transaction.quantity);
+            break;
+          case 'adjusted':
+            updatedItem.quantity = Math.max(0, updatedItem.quantity + transaction.quantity);
+            break;
+        }
+        
+        // Update the item
+        updateItem(updatedItem.id, {
+          quantity: updatedItem.quantity,
+          lastUpdated: new Date()
+        });
       }
       
-      // Update the item
-      updateItem(updatedItem.id, {
-        quantity: updatedItem.quantity,
-        lastUpdated: new Date()
+      return newTransaction;
+    } catch (error) {
+      console.error('Error adding transaction:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to record transaction. Please try again.',
+        variant: 'destructive'
       });
+      return null;
     }
-    
-    return newTransaction;
-  };
+  }, [items, updateItem]);
 
   return {
     items,
