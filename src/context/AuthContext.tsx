@@ -156,7 +156,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return user?.role === 'generalManager';
   };
 
-  const signIn = async (email: string, password: string, role?: string, department?: HotelDepartment, fullName?: string) => {
+  const signIn = async (email: string, password: string, role?: string, department?: HotelDepartment, fullName?: string): Promise<void> => {
     setLoading(true);
     
     try {
@@ -195,8 +195,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         title: 'Signed in successfully',
         description: `Welcome back ${displayName}! You are signed in as ${userRole} in ${userDepartment}.`
       });
-      
-      return mockUser;
     } catch (error: any) {
       toast({
         title: 'Error signing in',
@@ -209,7 +207,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signUp = async (email: string, password: string, name: string, role: string = 'staff', department: HotelDepartment = 'Front Office') => {
+  const signUp = async (email: string, password: string, name: string, role: string = 'staff', department: HotelDepartment = 'Front Office'): Promise<void> => {
     setLoading(true);
     try {
       const existingUser = userAccounts.find(account => account.email.toLowerCase() === email.toLowerCase());
@@ -249,8 +247,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         title: 'Signed up successfully',
         description: 'Your account has been created'
       });
-      
-      return mockUser;
     } catch (error: any) {
       toast({
         title: 'Error signing up',

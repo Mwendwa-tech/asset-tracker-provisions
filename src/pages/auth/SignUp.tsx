@@ -1,13 +1,21 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Lock, Mail, User, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { HotelDepartment } from '@/types';
 
 export default function SignUp() {
   const [email, setEmail] = useState('');
@@ -16,7 +24,10 @@ export default function SignUp() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [selectedRole, setSelectedRole] = useState('staff');
+  const [selectedDepartment, setSelectedDepartment] = useState<HotelDepartment>('Front Office');
   const { signUp, loading, user } = useAuth();
+  const navigate = useNavigate();
 
   // Password strength state
   const [passwordStrength, setPasswordStrength] = useState({
@@ -61,33 +72,30 @@ export default function SignUp() {
 
     // Validate form
     if (password !== confirmPassword) {
-      toast("Passwords don't match", {
-        description: "Please ensure both passwords are identical",
-        style: { backgroundColor: 'red', color: 'white' }
+      toast.error("Passwords don't match", {
+        description: "Please ensure both passwords are identical"
       });
       return;
     }
 
     if (passwordStrength.score < 3) {
-      toast("Password is too weak", {
-        description: "Please choose a stronger password",
-        style: { backgroundColor: 'red', color: 'white' }
+      toast.error("Password is too weak", {
+        description: "Please choose a stronger password"
       });
       return;
     }
     
     try {
       const fullName = `${firstName} ${lastName}`.trim();
-      await signUp(email, password, fullName);
-      toast("Account created successfully", {
-        description: "You can now sign in with your credentials",
-        style: { backgroundColor: 'green', color: 'white' }
+      await signUp(email, password, fullName, selectedRole, selectedDepartment);
+      toast.success("Account created successfully", {
+        description: "You have been signed in automatically"
       });
+      navigate('/'); // Redirect to dashboard after successful signup
     } catch (error: any) {
       console.error('Sign up error:', error);
-      toast("Failed to create account", {
-        description: error.message || "An unexpected error occurred",
-        style: { backgroundColor: 'red', color: 'white' }
+      toast.error("Failed to create account", {
+        description: error.message || "An unexpected error occurred"
       });
     }
   };
@@ -105,9 +113,37 @@ export default function SignUp() {
     return 'bg-green-500';
   };
 
+  const roles = [
+    { value: 'generalManager', label: 'General Manager' },
+    { value: 'departmentHead', label: 'Department Head' },
+    { value: 'storekeeper', label: 'Storekeeper' },
+    { value: 'roomsManager', label: 'Rooms Manager' },
+    { value: 'fbManager', label: 'F&B Manager' },
+    { value: 'housekeeper', label: 'Housekeeper' },
+    { value: 'frontDesk', label: 'Front Desk' },
+    { value: 'maintenance', label: 'Maintenance' },
+    { value: 'chef', label: 'Chef' },
+    { value: 'staff', label: 'Staff' }
+  ];
+
+  const departments: HotelDepartment[] = [
+    'Executive',
+    'Front Office',
+    'Housekeeping',
+    'Food & Beverage',
+    'Kitchen',
+    'Maintenance',
+    'Accounting',
+    'Human Resources',
+    'Purchasing',
+    'Stores',
+    'Security',
+    'Spa & Wellness'
+  ];
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-gray-900 p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Create an account</CardTitle>
           <CardDescription className="text-center">
@@ -162,6 +198,41 @@ export default function SignUp() {
                   required
                 />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="role">Select Your Role</Label>
+              <div className="relative">
+                <Select value={selectedRole} onValueChange={setSelectedRole}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roles.map((role) => (
+                      <SelectItem key={role.value} value={role.value}>
+                        {role.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="department">Select Your Department</Label>
+              <Select 
+                value={selectedDepartment} 
+                onValueChange={(value: HotelDepartment) => setSelectedDepartment(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept} value={dept}>
+                      {dept}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>

@@ -1,7 +1,7 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,19 +26,76 @@ export default function SignIn() {
   const [selectedDepartment, setSelectedDepartment] = useState<HotelDepartment>('Front Office');
   const [showRoleSelection, setShowRoleSelection] = useState(false);
   const { signIn, loading, user } = useAuth();
+  const navigate = useNavigate();
+
+  // Check local storage for saved user information when component mounts
+  useEffect(() => {
+    try {
+      const savedAccounts = localStorage.getItem('mock_user_accounts');
+      if (savedAccounts) {
+        const accounts = JSON.parse(savedAccounts);
+        const matchingAccount = accounts.find(
+          (account: any) => account.email.toLowerCase() === email.toLowerCase()
+        );
+        
+        if (matchingAccount && matchingAccount.name) {
+          // If we find a matching account, pre-fill the name fields
+          const nameParts = matchingAccount.name.split(' ');
+          if (nameParts.length > 0) {
+            setFirstName(nameParts[0]);
+            setLastName(nameParts.slice(1).join(' '));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error retrieving saved accounts:', error);
+    }
+  }, [email, showRoleSelection]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     try {
-      if (showRoleSelection && selectedRole) {
+      if (showRoleSelection) {
+        if (!selectedRole) {
+          toast.error("Please select a role");
+          return;
+        }
+        
+        if (!firstName.trim()) {
+          toast.error("Please enter your first name");
+          return;
+        }
+        
         const fullName = `${firstName} ${lastName}`.trim();
         await signIn(email, password, selectedRole, selectedDepartment, fullName);
+        navigate('/'); // Navigate to dashboard after successful sign in
       } else {
         // First step - validate email/password
         if (!email || !password) {
           toast.error("Please enter both email and password");
           return;
         }
+        
+        // Check if account exists in localStorage
+        const savedAccounts = localStorage.getItem('mock_user_accounts');
+        if (savedAccounts) {
+          const accounts = JSON.parse(savedAccounts);
+          const matchingAccount = accounts.find(
+            (account: any) => account.email.toLowerCase() === email.toLowerCase()
+          );
+          
+          if (matchingAccount) {
+            // If exact password match, sign in directly without role selection
+            if (matchingAccount.password === password) {
+              await signIn(email, password);
+              navigate('/');
+              return;
+            }
+          }
+        }
+        
+        // If we can't automatically sign in, show role selection
         setShowRoleSelection(true);
       }
     } catch (error: any) {
@@ -83,7 +140,7 @@ export default function SignIn() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-gray-900 p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Sign In</CardTitle>
           <CardDescription className="text-center">
@@ -160,7 +217,6 @@ export default function SignIn() {
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                       className="pl-10"
-                      required
                     />
                   </div>
                 </div>
@@ -207,7 +263,7 @@ export default function SignIn() {
             <Button
               type="submit"
               className="w-full"
-              disabled={loading || (showRoleSelection && (!selectedRole || !firstName || !lastName))}
+              disabled={loading || (showRoleSelection && (!selectedRole || !firstName))}
             >
               {loading ? 'Signing in...' : showRoleSelection ? 'Complete Sign In' : 'Continue'}
             </Button>

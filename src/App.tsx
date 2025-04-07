@@ -31,7 +31,7 @@ const queryClient = new QueryClient({
       retry: 1,
       refetchOnWindowFocus: true, // Enable auto-refresh when window regains focus
       staleTime: 1000 * 30, // 30 seconds - shorter time for more frequent updates
-      cacheTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 5, // 5 minutes (renamed from cacheTime)
       refetchInterval: 1000 * 60 * 2, // Refetch every 2 minutes for real-time data
     },
   },

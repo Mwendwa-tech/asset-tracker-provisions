@@ -31,20 +31,42 @@ const defaultAssets = {
 };
 
 const Dashboard = () => {
-  // Use the hooks to get real-time data
-  const { summary: inventorySummary, lowStockAlerts } = useInventory();
-  const { summary: assetSummary } = useAssets();
+  // Use the hooks to get real-time data with auto-refresh enabled
+  const { summary: inventorySummary, lowStockAlerts, refreshData: refreshInventory } = useInventory();
+  const { summary: assetSummary, refreshData: refreshAssets } = useAssets();
   
   // Provide default values when data is missing
   const inventory = inventorySummary || defaultInventory;
   const assets = assetSummary || defaultAssets;
   const alerts = lowStockAlerts || [];
 
-  // Force rerender when data changes
+  // Force refresh data when component mounts and when visibility changes
   useEffect(() => {
-    // This empty dependency array means this will only run once on component mount
-    console.log("Dashboard mounted, data initialized");
-  }, []);
+    // Refresh data when component mounts
+    refreshInventory();
+    refreshAssets();
+    
+    // Also refresh data when user returns to this tab/window
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshInventory();
+        refreshAssets();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Set up periodic refresh (every 60 seconds)
+    const refreshInterval = setInterval(() => {
+      refreshInventory();
+      refreshAssets();
+    }, 60000);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(refreshInterval);
+    };
+  }, [refreshInventory, refreshAssets]);
 
   return (
     <MainLayout>
