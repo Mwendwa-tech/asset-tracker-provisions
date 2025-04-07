@@ -34,12 +34,17 @@ export default function SignIn() {
         const fullName = `${firstName} ${lastName}`.trim();
         await signIn(email, password, selectedRole, selectedDepartment, fullName);
       } else {
-        // First step - show role selection after email/password are entered
+        // First step - validate email/password
+        if (!email || !password) {
+          toast.error("Please enter both email and password");
+          return;
+        }
         setShowRoleSelection(true);
       }
     } catch (error: any) {
       console.error('Sign in error:', error);
       toast.error(error.message || 'Failed to sign in');
+      setShowRoleSelection(false); // Return to first step on error
     }
   };
 

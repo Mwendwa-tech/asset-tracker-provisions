@@ -107,15 +107,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const storedUser = localStorage.getItem('mock_user');
     if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-      setSession({ user: parsedUser });
-      
-      const userExists = activeUsers.some(u => u.id === parsedUser.id);
-      if (!userExists) {
-        const updatedActiveUsers = [...activeUsers, parsedUser];
-        setActiveUsers(updatedActiveUsers);
-        localStorage.setItem('mock_active_users', JSON.stringify(updatedActiveUsers));
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setSession({ user: parsedUser });
+        
+        const userExists = activeUsers.some(u => u.id === parsedUser.id);
+        if (!userExists) {
+          const updatedActiveUsers = [...activeUsers, parsedUser];
+          setActiveUsers(updatedActiveUsers);
+          localStorage.setItem('mock_active_users', JSON.stringify(updatedActiveUsers));
+        }
+        
+        setInitialized(true);
+      } catch (error) {
+        console.error("Error parsing stored user:", error);
+        setInitialized(true);
       }
     } else {
       setInitialized(true);
@@ -153,43 +160,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     
     try {
-      setTimeout(() => {
-        const userAccount = userAccounts.find(account => account.email.toLowerCase() === email.toLowerCase());
-        
-        if (!userAccount) {
-          throw new Error("No account found with this email. Please sign up first.");
-        }
-        
-        if (userAccount.password !== password) {
-          throw new Error("Invalid password. Please try again.");
-        }
-        
-        const userRole = role || userAccount.role;
-        const userDepartment = department || userAccount.department;
-        const displayName = fullName || userAccount.name;
-        
-        const mockUser: User = { 
-          id: `user-${Date.now()}`, 
-          email, 
-          name: displayName,
-          role: userRole as User['role'],
-          department: userDepartment,
-          permissions: userRole === 'generalManager' ? Object.values(Permission) : RolePermissions[userRole as User['role']]
-        };
-        
-        setUser(mockUser);
-        setSession({ user: mockUser });
-        localStorage.setItem('mock_user', JSON.stringify(mockUser));
-        
-        const updatedActiveUsers = [...activeUsers, mockUser];
-        setActiveUsers(updatedActiveUsers);
-        localStorage.setItem('mock_active_users', JSON.stringify(updatedActiveUsers));
-        
-        toast({
-          title: 'Signed in successfully',
-          description: `Welcome back ${displayName}! You are signed in as ${userRole} in ${userDepartment}.`
-        });
-      }, 500);
+      const userAccount = userAccounts.find(account => account.email.toLowerCase() === email.toLowerCase());
+      
+      if (!userAccount) {
+        throw new Error("No account found with this email. Please sign up first.");
+      }
+      
+      if (userAccount.password !== password) {
+        throw new Error("Invalid password. Please try again.");
+      }
+      
+      const userRole = role || userAccount.role;
+      const userDepartment = department || userAccount.department;
+      const displayName = fullName || userAccount.name;
+      
+      const mockUser: User = { 
+        id: `user-${Date.now()}`, 
+        email, 
+        name: displayName,
+        role: userRole as User['role'],
+        department: userDepartment,
+        permissions: userRole === 'generalManager' ? Object.values(Permission) : RolePermissions[userRole as User['role']]
+      };
+      
+      setUser(mockUser);
+      setSession({ user: mockUser });
+      localStorage.setItem('mock_user', JSON.stringify(mockUser));
+      
+      const updatedActiveUsers = [...activeUsers, mockUser];
+      setActiveUsers(updatedActiveUsers);
+      localStorage.setItem('mock_active_users', JSON.stringify(updatedActiveUsers));
+      
+      toast({
+        title: 'Signed in successfully',
+        description: `Welcome back ${displayName}! You are signed in as ${userRole} in ${userDepartment}.`
+      });
+      
+      return mockUser;
     } catch (error: any) {
       toast({
         title: 'Error signing in',
@@ -205,45 +212,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUp = async (email: string, password: string, name: string, role: string = 'staff', department: HotelDepartment = 'Front Office') => {
     setLoading(true);
     try {
-      setTimeout(() => {
-        const existingUser = userAccounts.find(account => account.email.toLowerCase() === email.toLowerCase());
-        
-        if (existingUser) {
-          throw new Error("This email is already registered. Please sign in instead.");
-        }
-        
-        const newUserAccount: UserAccount = {
-          email,
-          password,
-          name,
-          role: role as User['role'],
-          department
-        };
-        
-        setUserAccounts(prev => [...prev, newUserAccount]);
-        
-        const mockUser: User = { 
-          id: `user-${Date.now()}`, 
-          email, 
-          name,
-          role: role as User['role'],
-          department,
-          permissions: role === 'generalManager' ? Object.values(Permission) : RolePermissions[role as User['role']]
-        };
-        
-        setUser(mockUser);
-        setSession({ user: mockUser });
-        localStorage.setItem('mock_user', JSON.stringify(mockUser));
-        
-        const updatedActiveUsers = [...activeUsers, mockUser];
-        setActiveUsers(updatedActiveUsers);
-        localStorage.setItem('mock_active_users', JSON.stringify(updatedActiveUsers));
-        
-        toast({
-          title: 'Signed up successfully',
-          description: 'Your account has been created'
-        });
-      }, 500);
+      const existingUser = userAccounts.find(account => account.email.toLowerCase() === email.toLowerCase());
+      
+      if (existingUser) {
+        throw new Error("This email is already registered. Please sign in instead.");
+      }
+      
+      const newUserAccount: UserAccount = {
+        email,
+        password,
+        name,
+        role: role as User['role'],
+        department
+      };
+      
+      setUserAccounts(prev => [...prev, newUserAccount]);
+      
+      const mockUser: User = { 
+        id: `user-${Date.now()}`, 
+        email, 
+        name,
+        role: role as User['role'],
+        department,
+        permissions: role === 'generalManager' ? Object.values(Permission) : RolePermissions[role as User['role']]
+      };
+      
+      setUser(mockUser);
+      setSession({ user: mockUser });
+      localStorage.setItem('mock_user', JSON.stringify(mockUser));
+      
+      const updatedActiveUsers = [...activeUsers, mockUser];
+      setActiveUsers(updatedActiveUsers);
+      localStorage.setItem('mock_active_users', JSON.stringify(updatedActiveUsers));
+      
+      toast({
+        title: 'Signed up successfully',
+        description: 'Your account has been created'
+      });
+      
+      return mockUser;
     } catch (error: any) {
       toast({
         title: 'Error signing up',

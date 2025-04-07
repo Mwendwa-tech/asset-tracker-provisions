@@ -15,6 +15,7 @@ import { ReportData, ReportContextType } from "@/types/reports";
 import { toast } from "sonner";
 import { getReportColor } from "./ReportUtils";
 import { useState } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ReportDialogProps {
   open: boolean;
@@ -35,18 +36,14 @@ export const ReportDialog = ({
   reportContext,
   data
 }: ReportDialogProps) => {
-  // Production-ready state for download status
+  // State for download status
   const [downloading, setDownloading] = useState(false);
 
   const handleDownload = async () => {
     setDownloading(true);
     
     try {
-      // In a real application, this would call an API endpoint
-      // Here we're simulating the download with a timeout
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Create a downloadable CSV from the report data
+      // Generate CSV data
       const csvContent = generateCSV(data);
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -77,11 +74,12 @@ export const ReportDialog = ({
     const csvRows = [
       headers.join(','),
       ...data.map(item => {
+        const sanitizedName = `"${item.name.replace(/"/g, '""')}"`;
         const sanitizedValue = typeof item.value === 'string' 
           ? `"${item.value.replace(/"/g, '""')}"` 
           : item.value;
         const sanitizedDetail = `"${item.detail.replace(/"/g, '""')}"`;
-        return `"${item.name}",${sanitizedValue},${sanitizedDetail}`;
+        return `${sanitizedName},${sanitizedValue},${sanitizedDetail}`;
       })
     ];
     
@@ -93,57 +91,59 @@ export const ReportDialog = ({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>
-            {reportTitle || reportContext.title}
-          </DialogTitle>
-          <DialogDescription>
-            {reportContext.description} - Generated on {new Date().toLocaleDateString()}
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="mt-4">
-          <Tabs defaultValue="chart">
-            <TabsList className="mb-4">
-              <TabsTrigger value="chart">Chart View</TabsTrigger>
-              <TabsTrigger value="table">Table View</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="chart" className="h-80">
-              <ReportChartView 
-                data={data}
-                reportType={reportType}
-                reportContext={reportContext}
-                color={reportColor}
-              />
-            </TabsContent>
-            
-            <TabsContent value="table">
-              <ReportTableView
-                data={data}
-                reportType={reportType}
-                reportContext={reportContext}
-              />
-            </TabsContent>
-          </Tabs>
-        </div>
-        
-        <div className="flex justify-end gap-2 mt-4">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
-            Close
-          </Button>
-          <Button
-            onClick={handleDownload}
-            disabled={downloading || data.length === 0}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            {downloading ? 'Downloading...' : 'Download Report'}
-          </Button>
-        </div>
+      <DialogContent className="max-w-4xl max-h-[90vh]">
+        <ScrollArea className="max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>
+              {reportTitle || reportContext.title}
+            </DialogTitle>
+            <DialogDescription>
+              {reportContext.description} - Generated on {new Date().toLocaleDateString()}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="mt-4">
+            <Tabs defaultValue="chart">
+              <TabsList className="mb-4">
+                <TabsTrigger value="chart">Chart View</TabsTrigger>
+                <TabsTrigger value="table">Table View</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="chart" className="h-80">
+                <ReportChartView 
+                  data={data}
+                  reportType={reportType}
+                  reportContext={reportContext}
+                  color={reportColor}
+                />
+              </TabsContent>
+              
+              <TabsContent value="table">
+                <ReportTableView
+                  data={data}
+                  reportType={reportType}
+                  reportContext={reportContext}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
+          
+          <div className="flex justify-end gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Close
+            </Button>
+            <Button
+              onClick={handleDownload}
+              disabled={downloading || data.length === 0}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              {downloading ? 'Downloading...' : 'Download Report'}
+            </Button>
+          </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

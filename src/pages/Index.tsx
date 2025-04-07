@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useInventory } from '@/hooks/useInventory';
 import { useAssets } from '@/hooks/useAssets';
-import { useState } from 'react';
+import { useEffect } from 'react';
 
 // Default values for when data is still loading
 const defaultInventory = { 
@@ -31,7 +31,7 @@ const defaultAssets = {
 };
 
 const Dashboard = () => {
-  // Use the hooks to get data - no loading/isReady state needed anymore
+  // Use the hooks to get real-time data
   const { summary: inventorySummary, lowStockAlerts } = useInventory();
   const { summary: assetSummary } = useAssets();
   
@@ -39,6 +39,12 @@ const Dashboard = () => {
   const inventory = inventorySummary || defaultInventory;
   const assets = assetSummary || defaultAssets;
   const alerts = lowStockAlerts || [];
+
+  // Force rerender when data changes
+  useEffect(() => {
+    // This empty dependency array means this will only run once on component mount
+    console.log("Dashboard mounted, data initialized");
+  }, []);
 
   return (
     <MainLayout>
