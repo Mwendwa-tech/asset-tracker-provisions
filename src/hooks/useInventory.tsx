@@ -85,17 +85,22 @@ export function useInventory() {
       }
     });
 
-    return {
+    const newSummary = {
       totalItems: inventoryItems.length,
       categories: Object.entries(categories).map(([name, count]) => ({ name, count })),
       lowStockItems,
       totalValue
     };
+
+    // Update summary state
+    setSummary(newSummary);
+    
+    return newSummary;
   }, []);
 
   // Calculate low stock alerts
   const calculateLowStockAlerts = useCallback((inventoryItems: InventoryItem[]): LowStockAlert[] => {
-    return inventoryItems
+    const alerts = inventoryItems
       .filter(item => item.quantity <= item.minStockLevel)
       .map(item => ({
         id: item.id,
@@ -105,16 +110,18 @@ export function useInventory() {
         minStockLevel: item.minStockLevel,
         unit: item.unit
       }));
+      
+    // Update alerts state
+    setLowStockAlerts(alerts);
+    
+    return alerts;
   }, []);
 
   // Update summary and alerts whenever items change
   useEffect(() => {
     try {
-      const newSummary = calculateSummary(items);
-      const newAlerts = calculateLowStockAlerts(items);
-      
-      setSummary(newSummary);
-      setLowStockAlerts(newAlerts);
+      calculateSummary(items);
+      calculateLowStockAlerts(items);
     } catch (error) {
       console.error("Error updating inventory summary:", error);
       // Don't let the app crash if summary calculation fails
@@ -285,6 +292,8 @@ export function useInventory() {
     addItem,
     updateItem,
     deleteItem,
-    addTransaction
+    addTransaction,
+    calculateSummary,
+    calculateLowStockAlerts
   };
 }

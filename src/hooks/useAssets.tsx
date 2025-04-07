@@ -84,7 +84,7 @@ export function useAssets() {
       totalValue += asset.currentValue;
     });
 
-    return {
+    const newSummary = {
       totalAssets: assetItems.length,
       available,
       checkedOut,
@@ -92,13 +92,17 @@ export function useAssets() {
       categories: Object.entries(categories).map(([name, count]) => ({ name, count })),
       totalValue
     };
+    
+    // Update summary state
+    setSummary(newSummary);
+    
+    return newSummary;
   }, []);
 
   // Update summary whenever assets change
   useEffect(() => {
     try {
-      const newSummary = calculateSummary(assets);
-      setSummary(newSummary);
+      calculateSummary(assets);
     } catch (error) {
       console.error("Error calculating summary:", error);
     }
@@ -404,6 +408,7 @@ export function useAssets() {
     deleteItem,
     checkOutAsset,
     checkInAsset,
-    changeAssetStatus
+    changeAssetStatus,
+    calculateSummary
   };
 }

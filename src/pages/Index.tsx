@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useInventory } from '@/hooks/useInventory';
 import { useAssets } from '@/hooks/useAssets';
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 // Default values for when data is still loading
 const defaultInventory = { 
@@ -31,14 +31,39 @@ const defaultAssets = {
 };
 
 const Dashboard = () => {
-  // Use the hooks to get real-time data with auto-refresh enabled
-  const { summary: inventorySummary, lowStockAlerts, refreshData: refreshInventory } = useInventory();
-  const { summary: assetSummary, refreshData: refreshAssets } = useAssets();
+  // Use the hooks to get real-time data
+  const { 
+    summary: inventorySummary, 
+    lowStockAlerts, 
+    calculateSummary, 
+    calculateLowStockAlerts,
+    items
+  } = useInventory();
+  
+  const { 
+    summary: assetSummary, 
+    calculateSummary: calculateAssetSummary,
+    assets 
+  } = useAssets();
   
   // Provide default values when data is missing
   const inventory = inventorySummary || defaultInventory;
   const assets = assetSummary || defaultAssets;
   const alerts = lowStockAlerts || [];
+
+  // Create refresh functions
+  const refreshInventory = useCallback(() => {
+    if (calculateSummary && items && calculateLowStockAlerts) {
+      calculateSummary(items);
+      calculateLowStockAlerts(items);
+    }
+  }, [calculateSummary, calculateLowStockAlerts, items]);
+
+  const refreshAssets = useCallback(() => {
+    if (calculateAssetSummary && assets) {
+      calculateAssetSummary(assets);
+    }
+  }, [calculateAssetSummary, assets]);
 
   // Force refresh data when component mounts and when visibility changes
   useEffect(() => {
