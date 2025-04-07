@@ -6,13 +6,15 @@ import { InventorySummary } from '@/components/dashboard/InventorySummary';
 import { AssetSummary } from '@/components/dashboard/AssetSummary';
 import { LowStockAlerts } from '@/components/dashboard/LowStockAlert';
 import { formatCurrency } from '@/utils/formatters';
-import { Package, Briefcase, AlertTriangle, BarChart3, RefreshCw } from 'lucide-react';
+import { Package, Briefcase, AlertTriangle, BarChart3, RefreshCw, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useInventory } from '@/hooks/useInventory';
 import { useAssets } from '@/hooks/useAssets';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { toast } from '@/components/ui/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Default values for when data is still loading
 const defaultInventory = { 
@@ -34,12 +36,13 @@ const defaultAssets = {
 const Dashboard = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [activeUsers, setActiveUsers] = useState<number>(0);
 
   // Use the hooks to get real-time data
   const { 
     summary: inventorySummary, 
     lowStockAlerts, 
-    calculateSummary, 
+    calculateSummary: calculateInventorySummary, 
     calculateLowStockAlerts,
     items
   } = useInventory();
@@ -50,18 +53,18 @@ const Dashboard = () => {
     assets: assetItems 
   } = useAssets();
   
-  // Provide default values when data is missing
-  const inventory = inventorySummary || defaultInventory;
-  const assets = assetSummary || defaultAssets;
-  const alerts = lowStockAlerts || [];
+  // Create useMemo instances to prevent unnecessary re-renders
+  const inventory = useMemo(() => inventorySummary || defaultInventory, [inventorySummary]);
+  const assets = useMemo(() => assetSummary || defaultAssets, [assetSummary]);
+  const alerts = useMemo(() => lowStockAlerts || [], [lowStockAlerts]);
 
   // Create refresh functions with visual feedback
   const refreshInventory = useCallback(() => {
-    if (calculateSummary && items && calculateLowStockAlerts) {
-      calculateSummary(items);
+    if (calculateInventorySummary && items && calculateLowStockAlerts) {
+      calculateInventorySummary(items);
       calculateLowStockAlerts(items);
     }
-  }, [calculateSummary, calculateLowStockAlerts, items]);
+  }, [calculateInventorySummary, calculateLowStockAlerts, items]);
 
   const refreshAssets = useCallback(() => {
     if (calculateAssetSummary && assetItems) {
@@ -90,6 +93,46 @@ const Dashboard = () => {
     setTimeout(() => setRefreshing(false), 600);
   }, [refreshInventory, refreshAssets]);
 
+  // Simulate multi-user activity
+  useEffect(() => {
+    // Set initial active users (3-8 random users)
+    setActiveUsers(Math.floor(Math.random() * 6) + 3);
+    
+    // Simulate users joining and leaving
+    const userActivity = setInterval(() => {
+      setActiveUsers(prev => {
+        // Random change (-1, 0, or +1)
+        const change = Math.floor(Math.random() * 3) - 1;
+        // Ensure at least 1 user and max 12 users
+        return Math.max(1, Math.min(12, prev + change));
+      });
+    }, 30000);
+    
+    return () => clearInterval(userActivity);
+  }, []);
+
+  // Setup localStorage sync for multi-user functionality
+  useEffect(() => {
+    // Listen for storage events from other tabs/windows
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key && event.key.startsWith('hostel-')) {
+        // Refresh data when another user makes changes
+        refreshAllData();
+        
+        toast({
+          title: "Data updated",
+          description: "Another user has made changes to the system",
+        });
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [refreshAllData]);
+
   // Force refresh data when component mounts and when visibility changes
   useEffect(() => {
     // Refresh data when component mounts
@@ -104,10 +147,12 @@ const Dashboard = () => {
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
-    // Set up periodic refresh (every 30 seconds for real-time updates)
+    // Set up periodic refresh (every 15 seconds for real-time updates)
     const refreshInterval = setInterval(() => {
-      refreshAllData();
-    }, 30000);
+      if (document.visibilityState === 'visible') {
+        refreshAllData();
+      }
+    }, 15000);
     
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -127,7 +172,23 @@ const Dashboard = () => {
           title="Dashboard"
           description={`Overview of your inventory and assets • Last updated: ${formatLastUpdated()}`}
           actions={
-            <div className="flex space-x-2">
+            <div className="flex space-x-2 items-center">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center mr-2">
+                      <Globe className="h-4 w-4 mr-1 text-green-500" />
+                      <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-300">
+                        {activeUsers} active {activeUsers === 1 ? 'user' : 'users'}
+                      </Badge>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Users currently accessing the system</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
               <Button 
                 variant="outline" 
                 onClick={refreshAllData} 

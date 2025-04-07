@@ -7,7 +7,7 @@ const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement>
 >(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto scrollbar-visible">
+  <div className="relative w-full overflow-auto scrollbar-visible rounded-md border">
     <table
       ref={ref}
       className={cn("w-full caption-bottom text-sm", className)}
@@ -21,7 +21,7 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b bg-gray-50 dark:bg-gray-900/50", className)} {...props} />
+  <thead ref={ref} className={cn("[&_tr]:border-b bg-gray-50/80 dark:bg-gray-900/50 sticky top-0 z-10", className)} {...props} />
 ))
 TableHeader.displayName = "TableHeader"
 
@@ -44,7 +44,7 @@ const TableFooter = React.forwardRef<
   <tfoot
     ref={ref}
     className={cn(
-      "border-t bg-muted/50 font-medium [&>tr]:last:border-b-0",
+      "border-t bg-muted/50 font-medium [&>tr]:last:border-b-0 sticky bottom-0 z-10",
       className
     )}
     {...props}
@@ -59,7 +59,7 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "border-b transition-colors hover:bg-blue-100/50 dark:hover:bg-blue-900/10 data-[state=selected]:bg-muted",
+      "border-b transition-colors hover:bg-blue-100/50 dark:hover:bg-blue-900/10 data-[state=selected]:bg-muted relative group",
       className
     )}
     {...props}
@@ -74,7 +74,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
+      "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 uppercase text-xs tracking-wider",
       className
     )}
     {...props}
@@ -88,7 +88,7 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0 text-foreground", className)}
+    className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0 text-foreground transition-colors group-hover:bg-blue-50/50 dark:group-hover:bg-blue-900/5", className)}
     {...props}
   />
 ))

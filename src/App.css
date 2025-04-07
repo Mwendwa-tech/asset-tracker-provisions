@@ -42,7 +42,22 @@
   color: #888;
 }
 
-/* Global scrollbar styling for all pages */
+/* Animation for data updates */
+@keyframes highlight-update {
+  0% { background-color: rgba(96, 165, 250, 0.2); }
+  100% { background-color: transparent; }
+}
+
+.data-updated {
+  animation: highlight-update 2s ease-out;
+}
+
+/* Smoother transitions */
+.transition-all {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Global scrollbar styling for all pages - enhanced version */
 ::-webkit-scrollbar {
   width: 12px;
   height: 12px;
@@ -58,14 +73,14 @@
 ::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.2);
   border-radius: 6px;
-  border: 2px solid transparent;
+  border: 3px solid transparent;
   background-clip: content-box;
   display: block !important;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.4);
-  border: 2px solid transparent;
+  border: 3px solid transparent;
   background-clip: content-box;
 }
 
@@ -75,8 +90,8 @@
   scrollbar-color: rgba(0, 0, 0, 0.3) rgba(0, 0, 0, 0.05);
 }
 
-/* Ensure content is scrollable */
-html, body {
+/* Ensure content is scrollable in all pages including auth pages */
+html, body, #root, .auth-layout, .main-layout {
   overflow-y: auto;
   height: 100%;
   scroll-behavior: smooth;
@@ -84,11 +99,86 @@ html, body {
 
 /* Ensure scrollbars are always visible */
 .scrollbar-visible {
-  overflow: auto;
-  scrollbar-width: thin;
+  overflow: auto !important;
+  scrollbar-width: thin !important;
 }
 
 /* Force scrollbars to be visible even when not scrolling */
 * {
-  scrollbar-gutter: stable;
+  scrollbar-gutter: stable !important;
+}
+
+/* Better form control styling */
+input, select, textarea {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+/* Multi-user session indicator */
+.user-session-indicator {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  background-color: rgba(16, 185, 129, 0.1);
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  color: rgb(16, 185, 129);
+  font-weight: 500;
+}
+
+.user-session-indicator::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: rgb(16, 185, 129);
+  margin-right: 0.25rem;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+  }
+  
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+/* Ensure auth pages have scrollbars too */
+.auth-container {
+  height: 100vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* Data change animation for real-time updates */
+.data-change {
+  transition: all 0.3s ease;
+}
+
+.data-change.updated {
+  background-color: rgba(96, 165, 250, 0.1);
+}
+
+/* Responsive tables for all screen sizes */
+@media (max-width: 640px) {
+  .responsive-table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+  }
 }
