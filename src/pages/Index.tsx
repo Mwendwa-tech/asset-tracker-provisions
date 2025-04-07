@@ -6,12 +6,13 @@ import { InventorySummary } from '@/components/dashboard/InventorySummary';
 import { AssetSummary } from '@/components/dashboard/AssetSummary';
 import { LowStockAlerts } from '@/components/dashboard/LowStockAlert';
 import { formatCurrency } from '@/utils/formatters';
-import { Package, Briefcase, AlertTriangle, BarChart3 } from 'lucide-react';
+import { Package, Briefcase, AlertTriangle, BarChart3, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useInventory } from '@/hooks/useInventory';
 import { useAssets } from '@/hooks/useAssets';
 import { useEffect, useState, useCallback } from 'react';
+import { toast } from '@/components/ui/use-toast';
 
 // Default values for when data is still loading
 const defaultInventory = { 
@@ -31,6 +32,9 @@ const defaultAssets = {
 };
 
 const Dashboard = () => {
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+
   // Use the hooks to get real-time data
   const { 
     summary: inventorySummary, 
@@ -51,7 +55,7 @@ const Dashboard = () => {
   const assets = assetSummary || defaultAssets;
   const alerts = lowStockAlerts || [];
 
-  // Create refresh functions
+  // Create refresh functions with visual feedback
   const refreshInventory = useCallback(() => {
     if (calculateSummary && items && calculateLowStockAlerts) {
       calculateSummary(items);
@@ -65,44 +69,78 @@ const Dashboard = () => {
     }
   }, [calculateAssetSummary, assetItems]);
 
+  // Combined refresh function with visual feedback
+  const refreshAllData = useCallback(() => {
+    setRefreshing(true);
+    
+    // Refresh all data sources
+    refreshInventory();
+    refreshAssets();
+    
+    // Update last refreshed timestamp
+    setLastUpdated(new Date());
+    
+    // Show toast notification
+    toast({
+      title: "Dashboard updated",
+      description: "All data has been refreshed",
+    });
+    
+    // Reset refreshing state after animation
+    setTimeout(() => setRefreshing(false), 600);
+  }, [refreshInventory, refreshAssets]);
+
   // Force refresh data when component mounts and when visibility changes
   useEffect(() => {
     // Refresh data when component mounts
-    refreshInventory();
-    refreshAssets();
+    refreshAllData();
     
     // Also refresh data when user returns to this tab/window
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        refreshInventory();
-        refreshAssets();
+        refreshAllData();
       }
     };
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
-    // Set up periodic refresh (every 60 seconds)
+    // Set up periodic refresh (every 30 seconds for real-time updates)
     const refreshInterval = setInterval(() => {
-      refreshInventory();
-      refreshAssets();
-    }, 60000);
+      refreshAllData();
+    }, 30000);
     
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(refreshInterval);
     };
-  }, [refreshInventory, refreshAssets]);
+  }, [refreshAllData]);
+
+  // Function to format the last updated time
+  const formatLastUpdated = () => {
+    return lastUpdated.toLocaleTimeString();
+  };
 
   return (
     <MainLayout>
       <div className="animate-fade-in">
         <PageHeader
           title="Dashboard"
-          description="Overview of your inventory and assets"
+          description={`Overview of your inventory and assets • Last updated: ${formatLastUpdated()}`}
           actions={
-            <Button asChild>
-              <Link to="/reports">Generate Report</Link>
-            </Button>
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={refreshAllData} 
+                disabled={refreshing}
+                className="transition-all duration-200"
+              >
+                <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <Button asChild>
+                <Link to="/reports">Generate Report</Link>
+              </Button>
+            </div>
           }
         />
 
