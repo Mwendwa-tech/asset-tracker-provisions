@@ -43,7 +43,7 @@ const Dashboard = () => {
   const { 
     summary: assetSummary, 
     calculateSummary: calculateAssetSummary,
-    assets 
+    assets: assetItems 
   } = useAssets();
   
   // Provide default values when data is missing
@@ -60,10 +60,10 @@ const Dashboard = () => {
   }, [calculateSummary, calculateLowStockAlerts, items]);
 
   const refreshAssets = useCallback(() => {
-    if (calculateAssetSummary && assets) {
-      calculateAssetSummary(assets);
+    if (calculateAssetSummary && assetItems) {
+      calculateAssetSummary(assetItems);
     }
-  }, [calculateAssetSummary, assets]);
+  }, [calculateAssetSummary, assetItems]);
 
   // Force refresh data when component mounts and when visibility changes
   useEffect(() => {
