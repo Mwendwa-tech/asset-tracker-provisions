@@ -6,6 +6,7 @@ import { formatDate } from '@/utils/formatters';
 import { Printer, FileText, Download, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
+import { companyInfo } from '@/config/systemConfig';
 
 interface ReceiptViewerProps {
   receipt: Receipt;
@@ -15,7 +16,7 @@ interface ReceiptViewerProps {
 
 export function ReceiptViewer({ receipt, onPrint, onDownload }: ReceiptViewerProps) {
   // Generate a reference number based on date and receipt ID
-  const referenceNumber = receipt.receiptNumber || `LG-${new Date(receipt.issueDate).getFullYear()}-${receipt.id.slice(0, 8).toUpperCase()}`;
+  const referenceNumber = receipt.receiptNumber || `${companyInfo.name.substring(0, 2).toUpperCase()}-${new Date(receipt.issueDate).getFullYear()}-${receipt.id.slice(0, 8).toUpperCase()}`;
   const printRef = useRef<HTMLDivElement>(null);
   
   // Custom print handler
@@ -161,6 +162,19 @@ export function ReceiptViewer({ receipt, onPrint, onDownload }: ReceiptViewerPro
                 font-size: 14px;
                 color: #718096;
               }
+              .company-info {
+                margin-top: 30px;
+                font-size: 12px;
+                color: #718096;
+                text-align: center;
+              }
+              .company-contact {
+                display: flex;
+                justify-content: center;
+                gap: 20px;
+                margin-top: 5px;
+                font-size: 12px;
+              }
               @media print {
                 button { display: none; }
                 body { margin: 0; padding: 0; }
@@ -176,9 +190,9 @@ export function ReceiptViewer({ receipt, onPrint, onDownload }: ReceiptViewerPro
                     <circle cx="12" cy="12" r="10"></circle>
                     <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path>
                   </svg>
-                  LUKENYA GETAWAY
+                  ${companyInfo.name.toUpperCase()}
                 </div>
-                <p class="hotel-tagline">Five Star Elegance</p>
+                <p class="hotel-tagline">${companyInfo.slogan}</p>
                 <h1 class="receipt-title">INVENTORY ISSUE RECEIPT</h1>
                 <p class="receipt-number">Receipt #: ${receipt.id}</p>
                 <p>Date: ${formatDate(receipt.issueDate)}</p>
@@ -244,8 +258,17 @@ export function ReceiptViewer({ receipt, onPrint, onDownload }: ReceiptViewerPro
                 </div>
               </div>
               
+              <div class="company-info">
+                <p>${companyInfo.name} - ${companyInfo.address}, ${companyInfo.city}, ${companyInfo.state} ${companyInfo.zipCode}, ${companyInfo.country}</p>
+                <div class="company-contact">
+                  <span>Tel: ${companyInfo.phone}</span>
+                  <span>Email: ${companyInfo.email}</span>
+                  <span>Web: ${companyInfo.website}</span>
+                </div>
+              </div>
+              
               <div class="footer">
-                <p>This is an official receipt of Lukenya Getaway.</p>
+                <p>This is an official receipt of ${companyInfo.name}.</p>
                 <p>For any inquiries, please contact the Inventory Department.</p>
                 <p><strong>Reference: ${referenceNumber}</strong></p>
               </div>
@@ -266,13 +289,13 @@ export function ReceiptViewer({ receipt, onPrint, onDownload }: ReceiptViewerPro
   const formattedDate = formatDate(receipt.issueDate);
   
   return (
-    <div className="space-y-4 max-h-[80vh] overflow-y-auto p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm" ref={printRef}>
+    <div className="space-y-4 max-h-[80vh] overflow-y-auto p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm scrollbar-visible" ref={printRef}>
       <div className="text-center border-b pb-6">
         <div className="flex items-center justify-center text-xl font-bold text-blue-900 dark:text-blue-300 mb-1">
           <Globe className="mr-2 h-5 w-5" />
-          LUKENYA GETAWAY
+          {companyInfo.name.toUpperCase()}
         </div>
-        <p className="text-sm italic text-muted-foreground">Five Star Elegance</p>
+        <p className="text-sm italic text-muted-foreground">{companyInfo.slogan}</p>
         <div className="mt-6">
           <h3 className="font-bold text-lg uppercase tracking-wide">Inventory Issue Receipt</h3>
           <p className="text-sm text-muted-foreground mt-2">Receipt #{receipt.id}</p>
@@ -369,8 +392,9 @@ export function ReceiptViewer({ receipt, onPrint, onDownload }: ReceiptViewerPro
       </div>
       
       <div className="text-center text-xs text-muted-foreground pt-4 border-t mt-6">
-        <p className="mb-1">This is an automatically generated receipt.</p>
-        <p className="font-medium">Lukenya Getaway - Official Document</p>
+        <p className="mb-1">{companyInfo.address}, {companyInfo.city}, {companyInfo.state} {companyInfo.zipCode}, {companyInfo.country}</p>
+        <p className="mb-1">Tel: {companyInfo.phone} • Email: {companyInfo.email} • Web: {companyInfo.website}</p>
+        <p className="font-medium">{companyInfo.name} - Official Document</p>
       </div>
     </div>
   );

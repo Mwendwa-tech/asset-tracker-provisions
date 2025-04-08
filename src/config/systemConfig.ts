@@ -59,7 +59,7 @@ export const systemSettings = {
   // User session timeout (milliseconds)
   sessionTimeout: 3600000, // 1 hour
   
-  // Copyright notice (empty as requested)
+  // Copyright notice - removed
   copyrightNotice: "",
 };
 

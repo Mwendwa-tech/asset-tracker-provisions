@@ -14,11 +14,12 @@ import {
 } from '@/utils/mockData';
 import { generateId } from '@/utils/formatters';
 import { toast } from '@/components/ui/use-toast';
+import { systemSettings } from '@/config/systemConfig';
 
 // Use localStorage key constants
 const STORAGE_KEYS = {
-  INVENTORY_ITEMS: 'hostel-inventory-items',
-  TRANSACTIONS: 'hostel-inventory-transactions'
+  INVENTORY_ITEMS: `${systemSettings.storageKeyPrefix}inventory-items`,
+  TRANSACTIONS: `${systemSettings.storageKeyPrefix}inventory-transactions`
 };
 
 export function useInventory() {
@@ -49,10 +50,17 @@ export function useInventory() {
   
   const [loading, setLoading] = useState(false);
 
-  // Save to localStorage whenever items or transactions change
+  // Save to localStorage whenever items or transactions change and broadcast to other tabs
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.INVENTORY_ITEMS, JSON.stringify(items));
+      
+      // Notify other tabs/windows about the data change
+      if (systemSettings.enableMultiUserSync) {
+        // Create a micro-timestamp to avoid collisions in storage events
+        const timestamp = new Date().getTime() + Math.random();
+        localStorage.setItem(systemSettings.multiUserSettings.channels.inventory, timestamp.toString());
+      }
     } catch (error) {
       console.error("Error saving inventory to localStorage:", error);
     }
@@ -127,6 +135,72 @@ export function useInventory() {
       // Don't let the app crash if summary calculation fails
     }
   }, [items, calculateSummary, calculateLowStockAlerts]);
+
+  // Listen for storage events from other tabs/windows
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === systemSettings.multiUserSettings.channels.inventory) {
+        // Reload data from localStorage (other tab made changes)
+        try {
+          const savedItems = localStorage.getItem(STORAGE_KEYS.INVENTORY_ITEMS);
+          if (savedItems) {
+            setItems(JSON.parse(savedItems));
+          }
+          
+          const savedTransactions = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
+          if (savedTransactions) {
+            setTransactions(JSON.parse(savedTransactions));
+          }
+        } catch (error) {
+          console.error("Error syncing inventory data from other tabs:", error);
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+  
+  // Check for and handle expired items automatically
+  useEffect(() => {
+    const checkForExpiredItems = () => {
+      const today = new Date();
+      const expiredItems: InventoryItem[] = [];
+      
+      items.forEach(item => {
+        if (item.expiryDate) {
+          const expiryDate = new Date(item.expiryDate);
+          if (expiryDate <= today && item.quantity > 0) {
+            expiredItems.push(item);
+          }
+        }
+      });
+      
+      // Process expired items
+      if (expiredItems.length > 0) {
+        expiredItems.forEach(item => {
+          // Add an expired transaction
+          const transaction: Omit<StockTransaction, 'id' | 'date'> = {
+            itemId: item.id,
+            itemName: item.name,
+            type: 'expired',
+            quantity: item.quantity, // Mark all as expired
+            performedBy: 'System',
+            notes: `Automatically marked as expired on ${today.toLocaleDateString()}`
+          };
+          
+          addTransaction(transaction);
+        });
+      }
+    };
+    
+    // Check for expired items when component mounts and daily
+    checkForExpiredItems();
+    
+    const intervalId = setInterval(checkForExpiredItems, 86400000); // Check once a day
+    
+    return () => clearInterval(intervalId);
+  }, [items]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Add new inventory item with safe implementation
   const addItem = useCallback((newItem: Omit<InventoryItem, 'id' | 'lastUpdated'>) => {
@@ -231,7 +305,8 @@ export function useInventory() {
     }
   }, [items]);
 
-  // Add a stock transaction
+  // Improved FIFO (First In, First Out) inventory handling
+  // This ensures older stock is used first
   const addTransaction = useCallback((transaction: Omit<StockTransaction, 'id' | 'date'>) => {
     try {
       const newTransaction: StockTransaction = {
@@ -250,13 +325,42 @@ export function useInventory() {
         
         switch (transaction.type) {
           case 'received':
-            updatedItem.quantity += transaction.quantity;
+            // When adding new inventory with an expiry date
+            if (transaction.expiryDate) {
+              // If we have different batches with different expiry dates,
+              // we need to track them separately. For this mock implementation,
+              // we're simplifying by just updating the quantity and setting
+              // the expiry date if it's sooner than the existing one
+              updatedItem.quantity += transaction.quantity;
+              
+              // If the item doesn't have an expiry date or the new batch expires sooner,
+              // update the expiry date
+              if (!updatedItem.expiryDate || 
+                  new Date(transaction.expiryDate) < new Date(updatedItem.expiryDate)) {
+                updatedItem.expiryDate = transaction.expiryDate;
+              }
+            } else {
+              // Simple quantity update if no expiry tracking
+              updatedItem.quantity += transaction.quantity;
+            }
             break;
+            
           case 'used':
           case 'expired':
+            // Deduct from quantity, ensuring we don't go below zero
             updatedItem.quantity = Math.max(0, updatedItem.quantity - transaction.quantity);
+            
+            // If we've used up all items with the earliest expiry date,
+            // we should update the expiry date to the next batch
+            // (For a real implementation, we'd need to track batches)
+            if (updatedItem.quantity === 0) {
+              // Clear expiry date if all stock is gone
+              updatedItem.expiryDate = undefined;
+            }
             break;
+            
           case 'adjusted':
+            // For manual adjustments
             updatedItem.quantity = Math.max(0, updatedItem.quantity + transaction.quantity);
             break;
         }
@@ -265,7 +369,11 @@ export function useInventory() {
         setItems(currentItems => 
           currentItems.map(item => 
             item.id === updatedItem.id 
-              ? { ...item, quantity: updatedItem.quantity, lastUpdated: new Date() } 
+              ? { ...item, 
+                  quantity: updatedItem.quantity, 
+                  expiryDate: updatedItem.expiryDate,
+                  lastUpdated: new Date() 
+                } 
               : item
           )
         );

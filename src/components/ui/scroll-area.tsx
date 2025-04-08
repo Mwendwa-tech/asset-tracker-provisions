@@ -10,7 +10,7 @@ const ScrollArea = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <ScrollAreaPrimitive.Root
     ref={ref}
-    className={cn("relative overflow-hidden scrollbar-visible", className)}
+    className={cn("relative overflow-hidden", className)}
     {...props}
   >
     <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit]">
@@ -32,9 +32,9 @@ const ScrollBar = React.forwardRef<
     className={cn(
       "flex touch-none select-none transition-colors",
       orientation === "vertical" &&
-        "h-full w-4 border-l border-l-transparent p-[1px]",  // Increased width for better visibility
+        "h-full w-5 border-l border-l-transparent p-[2px]",  // Increased width further
       orientation === "horizontal" &&
-        "h-4 flex-col border-t border-t-transparent p-[1px]", // Increased height for better visibility
+        "h-5 flex-col border-t border-t-transparent p-[2px]", // Increased height further
       "opacity-100 block", // Make scrollbar always visible
       className
     )}
@@ -42,8 +42,8 @@ const ScrollBar = React.forwardRef<
   >
     <ScrollAreaPrimitive.ScrollAreaThumb 
       className={cn(
-        "relative flex-1 rounded-full bg-muted/60 dark:bg-muted/30",
-        "hover:bg-primary/40 active:bg-primary/60 transition-colors duration-150 ease-out",
+        "relative flex-1 rounded-full bg-muted/70 dark:bg-muted/40", // Made thumb more visible
+        "hover:bg-primary/50 active:bg-primary/70 transition-colors duration-150 ease-out",
         "opacity-100" // Make thumb always visible
       )} 
     />

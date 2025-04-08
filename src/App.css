@@ -59,41 +59,42 @@
 
 /* Global scrollbar styling for all pages - enhanced version */
 ::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 14px !important;
+  height: 14px !important;
   display: block !important;
   opacity: 1 !important;
   visibility: visible !important;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.08) !important;
+  border-radius: 6px !important;
   display: block !important;
   opacity: 1 !important;
   visibility: visible !important;
+  margin: 2px !important;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 6px;
-  border: 3px solid transparent;
-  background-clip: content-box;
+  background: rgba(0, 0, 0, 0.3) !important;
+  border-radius: 6px !important;
+  border: 2px solid transparent !important;
+  background-clip: content-box !important;
   display: block !important;
   opacity: 1 !important;
   visibility: visible !important;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.4);
-  border: 3px solid transparent;
-  background-clip: content-box;
+  background: rgba(0, 0, 0, 0.5) !important;
+  border: 2px solid transparent !important;
+  background-clip: content-box !important;
 }
 
 /* For Firefox */
 * {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.3) rgba(0, 0, 0, 0.05);
+  scrollbar-width: auto !important;
+  scrollbar-color: rgba(0, 0, 0, 0.4) rgba(0, 0, 0, 0.08) !important;
 }
 
 /* Ensure content is scrollable in all pages including auth pages */
@@ -106,7 +107,7 @@ html, body, #root, .auth-layout, .main-layout {
 /* Ensure scrollbars are always visible */
 .scrollbar-visible {
   overflow: auto !important;
-  scrollbar-width: thin !important;
+  scrollbar-width: auto !important;
   scrollbar-gutter: stable !important;
 }
 
@@ -169,7 +170,7 @@ input:focus, select:focus, textarea:focus {
 .auth-container {
   height: 100vh;
   overflow-y: auto;
-  scrollbar-width: thin;
+  scrollbar-width: auto;
 }
 
 /* Data change animation for real-time updates */
