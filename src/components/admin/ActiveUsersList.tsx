@@ -12,9 +12,9 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { companyInfo } from '@/config/systemConfig';
 
 export function ActiveUsersList() {
   const { user, isAdmin, signOut } = useAuth();
@@ -69,7 +69,7 @@ export function ActiveUsersList() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p>You need administrator privileges to view active users.</p>
+          <p>You need administrator privileges to view active users of {companyInfo.name}.</p>
         </CardContent>
       </Card>
     );
@@ -85,7 +85,7 @@ export function ActiveUsersList() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-4 scrollbar-visible">
             {activeUsers.length === 0 ? (
               <p className="text-muted-foreground">No active users found</p>
             ) : (
@@ -136,7 +136,7 @@ export function ActiveUsersList() {
           <DialogHeader>
             <DialogTitle>Confirm Sign Out</DialogTitle>
             <DialogDescription>
-              Are you sure you want to sign out {selectedUser?.name}?
+              Are you sure you want to sign out {selectedUser?.name} from {companyInfo.name}?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

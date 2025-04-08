@@ -15,6 +15,8 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { systemSettings, companyInfo } from '@/config/systemConfig';
+import { useAuth } from '@/context/AuthContext';
 
 // Default values for when data is still loading
 const defaultInventory = { 
@@ -24,7 +26,7 @@ const defaultInventory = {
   categories: []
 };
 
-const defaultAssets = {
+const defaultAssetsSummary = {
   totalAssets: 0,
   available: 0,
   checkedOut: 0,
@@ -37,6 +39,7 @@ const Dashboard = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [activeUsers, setActiveUsers] = useState<number>(0);
+  const { isAdmin } = useAuth();
 
   // Use the hooks to get real-time data
   const { 
@@ -55,7 +58,7 @@ const Dashboard = () => {
   
   // Create useMemo instances to prevent unnecessary re-renders
   const inventory = useMemo(() => inventorySummary || defaultInventory, [inventorySummary]);
-  const assets = useMemo(() => assetSummary || defaultAssets, [assetSummary]);
+  const assets = useMemo(() => assetSummary || defaultAssetsSummary, [assetSummary]);
   const alerts = useMemo(() => lowStockAlerts || [], [lowStockAlerts]);
 
   // Create refresh functions with visual feedback
@@ -72,7 +75,7 @@ const Dashboard = () => {
     }
   }, [calculateAssetSummary, assetItems]);
 
-  // Combined refresh function with visual feedback
+  // Combined refresh function with visual feedback (only for manual refresh)
   const refreshAllData = useCallback(() => {
     setRefreshing(true);
     
@@ -83,14 +86,26 @@ const Dashboard = () => {
     // Update last refreshed timestamp
     setLastUpdated(new Date());
     
-    // Show toast notification
-    toast({
-      title: "Dashboard updated",
-      description: "All data has been refreshed",
-    });
+    // Only show toast for manual refresh as requested
+    if (systemSettings.showToastOnManualRefresh) {
+      toast({
+        title: "Dashboard updated",
+        description: "All data has been refreshed",
+      });
+    }
     
     // Reset refreshing state after animation
     setTimeout(() => setRefreshing(false), 600);
+  }, [refreshInventory, refreshAssets]);
+
+  // Auto-refresh data without toast notifications
+  const silentRefreshAllData = useCallback(() => {
+    // Refresh all data sources
+    refreshInventory();
+    refreshAssets();
+    
+    // Update last refreshed timestamp
+    setLastUpdated(new Date());
   }, [refreshInventory, refreshAssets]);
 
   // Simulate multi-user activity
@@ -117,12 +132,15 @@ const Dashboard = () => {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key && event.key.startsWith('hostel-')) {
         // Refresh data when another user makes changes
-        refreshAllData();
+        silentRefreshAllData();
         
-        toast({
-          title: "Data updated",
-          description: "Another user has made changes to the system",
-        });
+        // Only show toast if setting is enabled
+        if (systemSettings.showToastOnAutoRefresh) {
+          toast({
+            title: "Data updated",
+            description: "Another user has made changes to the system",
+          });
+        }
       }
     };
     
@@ -131,34 +149,34 @@ const Dashboard = () => {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [refreshAllData]);
+  }, [silentRefreshAllData]);
 
-  // Force refresh data when component mounts and when visibility changes
+  // Force refresh data when component mounts and periodic refresh every 5 seconds
   useEffect(() => {
     // Refresh data when component mounts
-    refreshAllData();
+    silentRefreshAllData();
     
     // Also refresh data when user returns to this tab/window
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        refreshAllData();
+        silentRefreshAllData();
       }
     };
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
-    // Set up periodic refresh (every 15 seconds for real-time updates)
+    // Set up periodic refresh (every 5 seconds as requested)
     const refreshInterval = setInterval(() => {
       if (document.visibilityState === 'visible') {
-        refreshAllData();
+        silentRefreshAllData();
       }
-    }, 15000);
+    }, systemSettings.dataRefreshInterval); // 5 seconds
     
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(refreshInterval);
     };
-  }, [refreshAllData]);
+  }, [silentRefreshAllData]);
 
   // Function to format the last updated time
   const formatLastUpdated = () => {
@@ -169,25 +187,27 @@ const Dashboard = () => {
     <MainLayout>
       <div className="animate-fade-in">
         <PageHeader
-          title="Dashboard"
+          title={`${companyInfo.name} Dashboard`}
           description={`Overview of your inventory and assets • Last updated: ${formatLastUpdated()}`}
           actions={
             <div className="flex space-x-2 items-center">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center mr-2">
-                      <Globe className="h-4 w-4 mr-1 text-green-500" />
-                      <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-300">
-                        {activeUsers} active {activeUsers === 1 ? 'user' : 'users'}
-                      </Badge>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Users currently accessing the system</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              {isAdmin() && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center mr-2">
+                        <Globe className="h-4 w-4 mr-1 text-green-500" />
+                        <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-300">
+                          {activeUsers} active {activeUsers === 1 ? 'user' : 'users'}
+                        </Badge>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Users currently accessing the system</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
               
               <Button 
                 variant="outline" 
