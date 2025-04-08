@@ -7,9 +7,16 @@ import { Button } from '@/components/ui/button';
 import { Plus, FileText, ClipboardList, TruckIcon, Building } from 'lucide-react';
 import { LocalPurchaseOrder } from '@/components/procurement/LocalPurchaseOrder';
 import { DashboardCard } from '@/components/dashboard/DashboardCard';
+import { userRoles } from '@/config/systemConfig';
+import { useAuth } from '@/context/AuthContext';
 
 const Procurement = () => {
   const [activeTab, setActiveTab] = useState('lpo');
+  const { user } = useAuth();
+  
+  const isProcurementOfficer = user?.role === 'procurementOfficer' || 
+                              user?.role === 'generalManager' ||
+                              user?.role === 'departmentHead';
 
   return (
     <MainLayout>
@@ -18,7 +25,7 @@ const Procurement = () => {
           title="Procurement Management"
           description="Manage purchase orders, suppliers, and procurement activities"
           actions={
-            <Button>
+            <Button disabled={!isProcurementOfficer}>
               <Plus className="mr-2 h-4 w-4" /> New Purchase Order
             </Button>
           }

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { 
   InventoryItem, 
@@ -342,18 +343,18 @@ export function useInventory() {
               
               updatedItem.quantity = newStock;
               
-              // Update value if provided
-              if (transaction.value) {
-                const newValue = currentValue + transaction.value;
+              // Update value based on transaction
+              if (transaction.currentValue !== undefined) {
+                const newValue = currentValue + transaction.currentValue;
                 updatedItem.currentValue = newValue;
               }
             } else {
               // Simple quantity update if no expiry tracking
               updatedItem.quantity += transaction.quantity;
               
-              // Update value if provided
-              if (transaction.value) {
-                updatedItem.currentValue += transaction.value;
+              // Update value based on transaction
+              if (transaction.currentValue !== undefined) {
+                updatedItem.currentValue += transaction.currentValue;
               }
             }
             break;
@@ -380,8 +381,8 @@ export function useInventory() {
             updatedItem.quantity = Math.max(0, updatedItem.quantity + transaction.quantity);
             
             // If adjustment includes a value update
-            if (transaction.value !== undefined) {
-              updatedItem.currentValue = Math.max(0, updatedItem.currentValue + transaction.value);
+            if (transaction.currentValue !== undefined) {
+              updatedItem.currentValue = Math.max(0, updatedItem.currentValue + transaction.currentValue);
             }
             break;
         }

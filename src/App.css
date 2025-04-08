@@ -59,16 +59,16 @@
 
 /* Global scrollbar styling for all pages - with increased visibility */
 ::-webkit-scrollbar {
-  width: 16px !important;
-  height: 16px !important;
+  width: 18px !important;
+  height: 18px !important;
   display: block !important;
   opacity: 1 !important;
   visibility: visible !important;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.12) !important;
-  border-radius: 6px !important;
+  background: rgba(0, 0, 0, 0.15) !important;
+  border-radius: 8px !important;
   display: block !important;
   opacity: 1 !important;
   visibility: visible !important;
@@ -76,8 +76,8 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.5) !important;
-  border-radius: 6px !important;
+  background: rgba(0, 0, 0, 0.6) !important;
+  border-radius: 8px !important;
   border: 2px solid transparent !important;
   background-clip: content-box !important;
   display: block !important;
@@ -86,15 +86,15 @@
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.7) !important;
+  background: rgba(0, 0, 0, 0.8) !important;
   border: 2px solid transparent !important;
   background-clip: content-box !important;
 }
 
 /* For Firefox */
 * {
-  scrollbar-width: auto !important;
-  scrollbar-color: rgba(0, 0, 0, 0.5) rgba(0, 0, 0, 0.12) !important;
+  scrollbar-width: thick !important;
+  scrollbar-color: rgba(0, 0, 0, 0.6) rgba(0, 0, 0, 0.15) !important;
 }
 
 /* Ensure content is scrollable in all pages including auth pages */
@@ -107,7 +107,7 @@ html, body, #root, .auth-layout, .main-layout {
 /* Ensure scrollbars are always visible */
 .scrollbar-visible {
   overflow: auto !important;
-  scrollbar-width: auto !important;
+  scrollbar-width: thick !important;
   scrollbar-gutter: stable !important;
 }
 

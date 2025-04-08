@@ -32,9 +32,9 @@ const ScrollBar = React.forwardRef<
     className={cn(
       "flex touch-none select-none transition-colors",
       orientation === "vertical" &&
-        "h-full w-5 border-l border-l-transparent p-[2px]",  // Increased width further
+        "h-full w-6 border-l border-l-transparent p-[3px]",  // Increased width further
       orientation === "horizontal" &&
-        "h-5 flex-col border-t border-t-transparent p-[2px]", // Increased height further
+        "h-6 flex-col border-t border-t-transparent p-[3px]", // Increased height further
       "opacity-100 block", // Make scrollbar always visible
       className
     )}
@@ -42,9 +42,10 @@ const ScrollBar = React.forwardRef<
   >
     <ScrollAreaPrimitive.ScrollAreaThumb 
       className={cn(
-        "relative flex-1 rounded-full bg-muted/70 dark:bg-muted/40", // Made thumb more visible
-        "hover:bg-primary/50 active:bg-primary/70 transition-colors duration-150 ease-out",
-        "opacity-100" // Make thumb always visible
+        "relative flex-1 rounded-full bg-muted/80 dark:bg-muted/50", // Made thumb more visible
+        "hover:bg-primary/60 active:bg-primary/80 transition-colors duration-150 ease-out",
+        "opacity-100", // Make thumb always visible
+        "min-h-[30px]" // Ensure minimum size for better visibility
       )} 
     />
   </ScrollAreaPrimitive.ScrollAreaScrollbar>
