@@ -87,6 +87,68 @@ export const userRoles = {
     canManageAssets: true,
     canManageSuppliers: true,
   },
+  foodAndBeverageManager: {
+    label: "Food & Beverage Manager",
+    level: 7,
+    canApproveRequests: true,
+    canManageUsers: false,
+    canViewReports: true,
+    canManageSettings: false,
+    canManageInventory: true,
+    canManageAssets: true,
+    canManageSuppliers: true,
+    description: "Manages all food and beverage operations"
+  },
+  procurementOfficer: {
+    label: "Procurement Officer",
+    level: 6,
+    canApproveRequests: false,
+    canManageUsers: false,
+    canViewReports: true,
+    canManageSettings: false,
+    canManageInventory: true,
+    canManageAssets: true,
+    canManageSuppliers: true,
+    canCreatePurchaseOrders: true,
+    description: "Handles purchasing and procurement processes"
+  },
+  executiveChef: {
+    label: "Executive Chef",
+    level: 6,
+    canApproveRequests: true,
+    canManageUsers: false,
+    canViewReports: true,
+    canManageSettings: false,
+    canManageInventory: true,
+    canManageKitchenInventory: true,
+    canManageAssets: false,
+    canManageSuppliers: false,
+    description: "Manages kitchen operations and food inventory"
+  },
+  housekeepingManager: {
+    label: "Housekeeping Manager",
+    level: 6,
+    canApproveRequests: true,
+    canManageUsers: false,
+    canViewReports: true,
+    canManageSettings: false,
+    canManageInventory: true,
+    canManageAssets: true,
+    canManageSuppliers: false,
+    description: "Manages housekeeping staff and related inventory"
+  },
+  frontOfficeManager: {
+    label: "Front Office Manager",
+    level: 6,
+    canApproveRequests: true,
+    canManageUsers: false,
+    canViewReports: true,
+    canManageSettings: false,
+    canManageInventory: false,
+    canManageAssets: true,
+    canManageSuppliers: false,
+    description: "Manages front desk operations and related assets"
+  },
   storekeeper: {
     label: "Storekeeper",
     level: 5,
@@ -97,6 +159,30 @@ export const userRoles = {
     canManageInventory: true,
     canManageAssets: true,
     canManageSuppliers: false,
+  },
+  maintenanceManager: {
+    label: "Maintenance Manager",
+    level: 5,
+    canApproveRequests: false,
+    canManageUsers: false,
+    canViewReports: true,
+    canManageSettings: false,
+    canManageInventory: true,
+    canManageAssets: true,
+    canManageSuppliers: false,
+    description: "Responsible for property maintenance and repairs"
+  },
+  securityManager: {
+    label: "Security Manager",
+    level: 5,
+    canApproveRequests: false,
+    canManageUsers: false,
+    canViewReports: true,
+    canManageSettings: false,
+    canManageInventory: false,
+    canManageAssets: true,
+    canManageSuppliers: false,
+    description: "Manages security operations and equipment"
   },
   staff: {
     label: "Staff",
@@ -110,6 +196,24 @@ export const userRoles = {
     canManageSuppliers: false,
   }
 };
+
+// Hotel departments
+export const hotelDepartments = [
+  "Front Office",
+  "Housekeeping",
+  "Food & Beverage",
+  "Kitchen",
+  "Maintenance",
+  "Security",
+  "Administration",
+  "Human Resources",
+  "Sales & Marketing",
+  "Finance",
+  "IT",
+  "Spa & Wellness",
+  "Laundry",
+  "Recreation"
+];
 
 // Support for multi-user environment
 export const multiUserSettings = {
@@ -146,10 +250,35 @@ export const validationRules = {
   allowedFileTypes: ['.jpg', '.jpeg', '.png', '.pdf', '.doc', '.docx', '.xls', '.xlsx'],
 };
 
+// Purchase Order Types
+export const purchaseOrderTypes = [
+  "Standard",
+  "Emergency",
+  "Contract",
+  "Local Purchase Order",
+  "Blanket",
+  "Special"
+];
+
+// Purchase Order Status
+export const purchaseOrderStatus = [
+  "Draft",
+  "Awaiting Approval",
+  "Approved",
+  "Sent to Vendor",
+  "Partially Received",
+  "Received",
+  "Cancelled",
+  "On Hold"
+];
+
 export default {
   companyInfo,
   systemSettings,
   userRoles,
   multiUserSettings,
   validationRules,
+  hotelDepartments,
+  purchaseOrderTypes,
+  purchaseOrderStatus
 };

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { 
   InventoryItem, 
@@ -59,7 +58,7 @@ export function useInventory() {
       if (systemSettings.enableMultiUserSync) {
         // Create a micro-timestamp to avoid collisions in storage events
         const timestamp = new Date().getTime() + Math.random();
-        localStorage.setItem(systemSettings.multiUserSettings.channels.inventory, timestamp.toString());
+        localStorage.setItem('hostel-inventory-update', timestamp.toString());
       }
     } catch (error) {
       console.error("Error saving inventory to localStorage:", error);
@@ -139,7 +138,7 @@ export function useInventory() {
   // Listen for storage events from other tabs/windows
   useEffect(() => {
     const handleStorage = (event: StorageEvent) => {
-      if (event.key === systemSettings.multiUserSettings.channels.inventory) {
+      if (event.key === 'hostel-inventory-update') {
         // Reload data from localStorage (other tab made changes)
         try {
           const savedItems = localStorage.getItem(STORAGE_KEYS.INVENTORY_ITEMS);
@@ -305,8 +304,7 @@ export function useInventory() {
     }
   }, [items]);
 
-  // Improved FIFO (First In, First Out) inventory handling
-  // This ensures older stock is used first
+  // Improved FIFO (First In, First Out) inventory handling for better expiry tracking
   const addTransaction = useCallback((transaction: Omit<StockTransaction, 'id' | 'date'>) => {
     try {
       const newTransaction: StockTransaction = {
@@ -325,35 +323,53 @@ export function useInventory() {
         
         switch (transaction.type) {
           case 'received':
-            // When adding new inventory with an expiry date
+            // Properly handle inventory with different expiration dates
             if (transaction.expiryDate) {
-              // If we have different batches with different expiry dates,
-              // we need to track them separately. For this mock implementation,
-              // we're simplifying by just updating the quantity and setting
-              // the expiry date if it's sooner than the existing one
-              updatedItem.quantity += transaction.quantity;
+              const currentStock = updatedItem.quantity;
+              const currentValue = updatedItem.currentValue;
+              const newStock = currentStock + transaction.quantity;
               
-              // If the item doesn't have an expiry date or the new batch expires sooner,
-              // update the expiry date
-              if (!updatedItem.expiryDate || 
+              // Calculate weighted expiry date for inventory
+              // If current stock is 0 or the new batch expires sooner than the existing one, use the new expiry date
+              if (currentStock === 0 || 
+                  !updatedItem.expiryDate || 
                   new Date(transaction.expiryDate) < new Date(updatedItem.expiryDate)) {
                 updatedItem.expiryDate = transaction.expiryDate;
+              } else if (transaction.quantity > currentStock * 2) {
+                // If the new batch is significantly larger, use its expiry date
+                updatedItem.expiryDate = transaction.expiryDate;
+              }
+              
+              updatedItem.quantity = newStock;
+              
+              // Update value if provided
+              if (transaction.value) {
+                const newValue = currentValue + transaction.value;
+                updatedItem.currentValue = newValue;
               }
             } else {
               // Simple quantity update if no expiry tracking
               updatedItem.quantity += transaction.quantity;
+              
+              // Update value if provided
+              if (transaction.value) {
+                updatedItem.currentValue += transaction.value;
+              }
             }
             break;
             
           case 'used':
           case 'expired':
             // Deduct from quantity, ensuring we don't go below zero
-            updatedItem.quantity = Math.max(0, updatedItem.quantity - transaction.quantity);
+            const deductionAmount = Math.min(updatedItem.quantity, transaction.quantity);
+            updatedItem.quantity -= deductionAmount;
             
-            // If we've used up all items with the earliest expiry date,
-            // we should update the expiry date to the next batch
-            // (For a real implementation, we'd need to track batches)
-            if (updatedItem.quantity === 0) {
+            // Adjust the value proportionally
+            if (updatedItem.quantity > 0) {
+              const valuePerUnit = updatedItem.currentValue / (updatedItem.quantity + deductionAmount);
+              updatedItem.currentValue -= valuePerUnit * deductionAmount;
+            } else {
+              updatedItem.currentValue = 0;
               // Clear expiry date if all stock is gone
               updatedItem.expiryDate = undefined;
             }
@@ -362,6 +378,11 @@ export function useInventory() {
           case 'adjusted':
             // For manual adjustments
             updatedItem.quantity = Math.max(0, updatedItem.quantity + transaction.quantity);
+            
+            // If adjustment includes a value update
+            if (transaction.value !== undefined) {
+              updatedItem.currentValue = Math.max(0, updatedItem.currentValue + transaction.value);
+            }
             break;
         }
         
@@ -371,6 +392,7 @@ export function useInventory() {
             item.id === updatedItem.id 
               ? { ...item, 
                   quantity: updatedItem.quantity, 
+                  currentValue: updatedItem.currentValue,
                   expiryDate: updatedItem.expiryDate,
                   lastUpdated: new Date() 
                 } 

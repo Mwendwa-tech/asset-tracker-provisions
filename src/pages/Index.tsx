@@ -37,7 +37,6 @@ const defaultAssetsSummary = {
 
 const Dashboard = () => {
   const [refreshing, setRefreshing] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [activeUsers, setActiveUsers] = useState<number>(0);
   const { isAdmin } = useAuth();
 
@@ -83,9 +82,6 @@ const Dashboard = () => {
     refreshInventory();
     refreshAssets();
     
-    // Update last refreshed timestamp
-    setLastUpdated(new Date());
-    
     // Only show toast for manual refresh as requested
     if (systemSettings.showToastOnManualRefresh) {
       toast({
@@ -103,9 +99,6 @@ const Dashboard = () => {
     // Refresh all data sources
     refreshInventory();
     refreshAssets();
-    
-    // Update last refreshed timestamp
-    setLastUpdated(new Date());
   }, [refreshInventory, refreshAssets]);
 
   // Simulate multi-user activity
@@ -178,17 +171,12 @@ const Dashboard = () => {
     };
   }, [silentRefreshAllData]);
 
-  // Function to format the last updated time
-  const formatLastUpdated = () => {
-    return lastUpdated.toLocaleTimeString();
-  };
-
   return (
     <MainLayout>
       <div className="animate-fade-in">
         <PageHeader
           title={`${companyInfo.name} Dashboard`}
-          description={`Overview of your inventory and assets • Last updated: ${formatLastUpdated()}`}
+          description={`Overview of your inventory and assets`}
           actions={
             <div className="flex space-x-2 items-center">
               {isAdmin() && (
