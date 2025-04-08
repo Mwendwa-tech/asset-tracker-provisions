@@ -57,17 +57,17 @@
   transition: all 0.3s ease-in-out;
 }
 
-/* Global scrollbar styling for all pages - with increased visibility */
+/* Global scrollbar styling for all pages - with significantly increased visibility */
 ::-webkit-scrollbar {
-  width: 18px !important;
-  height: 18px !important;
+  width: 20px !important;
+  height: 20px !important;
   display: block !important;
   opacity: 1 !important;
   visibility: visible !important;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.15) !important;
+  background: rgba(0, 0, 0, 0.25) !important;
   border-radius: 8px !important;
   display: block !important;
   opacity: 1 !important;
@@ -76,17 +76,18 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.6) !important;
+  background: rgba(0, 0, 0, 0.7) !important;
   border-radius: 8px !important;
   border: 2px solid transparent !important;
   background-clip: content-box !important;
   display: block !important;
   opacity: 1 !important;
   visibility: visible !important;
+  min-height: 40px !important;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.8) !important;
+  background: rgba(0, 0, 0, 0.9) !important;
   border: 2px solid transparent !important;
   background-clip: content-box !important;
 }
@@ -94,7 +95,7 @@
 /* For Firefox */
 * {
   scrollbar-width: thick !important;
-  scrollbar-color: rgba(0, 0, 0, 0.6) rgba(0, 0, 0, 0.15) !important;
+  scrollbar-color: rgba(0, 0, 0, 0.7) rgba(0, 0, 0, 0.25) !important;
 }
 
 /* Ensure content is scrollable in all pages including auth pages */

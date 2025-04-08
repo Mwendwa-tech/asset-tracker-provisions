@@ -14,9 +14,10 @@ const Procurement = () => {
   const [activeTab, setActiveTab] = useState('lpo');
   const { user } = useAuth();
   
+  // Fixed the role comparison logic
   const isProcurementOfficer = user?.role === 'procurementOfficer' || 
-                              user?.role === 'generalManager' ||
-                              user?.role === 'departmentHead';
+                               user?.role === 'generalManager' ||
+                               user?.role === 'departmentHead';
 
   return (
     <MainLayout>

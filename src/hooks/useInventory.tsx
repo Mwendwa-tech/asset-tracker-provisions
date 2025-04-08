@@ -216,11 +216,11 @@ export function useInventory() {
       setItems(currentItems => [...currentItems, itemToAdd]);
       
       // Record transaction
-      const newTransaction = {
+      const newTransaction: StockTransaction = {
         id: generateId(),
         itemId: itemToAdd.id,
         itemName: itemToAdd.name,
-        type: 'received' as const,
+        type: 'received',
         quantity: itemToAdd.quantity,
         performedBy: 'Current User',
         notes: 'Initial inventory setup',
@@ -323,7 +323,7 @@ export function useInventory() {
         const updatedItem = { ...itemToUpdate };
         
         switch (transaction.type) {
-          case 'received':
+          case "received":
             // Properly handle inventory with different expiration dates
             if (transaction.expiryDate) {
               const currentStock = updatedItem.quantity;
@@ -343,8 +343,8 @@ export function useInventory() {
               
               updatedItem.quantity = newStock;
               
-              // Update value based on transaction
-              if (transaction.currentValue !== undefined) {
+              // Update value if provided in the transaction
+              if ('currentValue' in transaction && transaction.currentValue !== undefined) {
                 const newValue = currentValue + transaction.currentValue;
                 updatedItem.currentValue = newValue;
               }
@@ -352,15 +352,15 @@ export function useInventory() {
               // Simple quantity update if no expiry tracking
               updatedItem.quantity += transaction.quantity;
               
-              // Update value based on transaction
-              if (transaction.currentValue !== undefined) {
+              // Update value if provided in the transaction
+              if ('currentValue' in transaction && transaction.currentValue !== undefined) {
                 updatedItem.currentValue += transaction.currentValue;
               }
             }
             break;
             
-          case 'used':
-          case 'expired':
+          case "used":
+          case "expired":
             // Deduct from quantity, ensuring we don't go below zero
             const deductionAmount = Math.min(updatedItem.quantity, transaction.quantity);
             updatedItem.quantity -= deductionAmount;
@@ -376,12 +376,12 @@ export function useInventory() {
             }
             break;
             
-          case 'adjusted':
+          case "adjusted":
             // For manual adjustments
             updatedItem.quantity = Math.max(0, updatedItem.quantity + transaction.quantity);
             
             // If adjustment includes a value update
-            if (transaction.currentValue !== undefined) {
+            if ('currentValue' in transaction && transaction.currentValue !== undefined) {
               updatedItem.currentValue = Math.max(0, updatedItem.currentValue + transaction.currentValue);
             }
             break;

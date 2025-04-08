@@ -79,18 +79,18 @@ export interface CheckoutHistory {
   notes?: string;
 }
 
-export interface StockTransaction {
+export type StockTransaction = {
   id: string;
   itemId: string;
   itemName: string;
-  type: 'received' | 'used' | 'adjusted' | 'expired';
+  type: 'received' | 'used' | 'expired' | 'adjusted';
   quantity: number;
-  date: Date;
   performedBy: string;
   notes?: string;
-  batchId?: string;
+  date: Date;
   expiryDate?: Date;
-}
+  currentValue?: number;
+};
 
 export interface User {
   id: string;
