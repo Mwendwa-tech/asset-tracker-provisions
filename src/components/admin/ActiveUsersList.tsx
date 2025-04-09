@@ -24,19 +24,32 @@ export function ActiveUsersList() {
   
   // Get active users from localStorage
   React.useEffect(() => {
+    const handleStorageChange = () => {
+      refreshActiveUsers();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    refreshActiveUsers();
+    
+    // Set interval for periodic refresh
+    const refreshInterval = setInterval(refreshActiveUsers, 10000);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(refreshInterval);
+    };
+  }, []);
+  
+  const refreshActiveUsers = () => {
     const storedUsers = localStorage.getItem('mock_active_users');
     if (storedUsers) {
       setActiveUsers(JSON.parse(storedUsers));
     }
-  }, []);
+  };
   
   const handleSignOutUser = async (userId: string) => {
     await signOut(userId);
-    // Refresh the list
-    const storedUsers = localStorage.getItem('mock_active_users');
-    if (storedUsers) {
-      setActiveUsers(JSON.parse(storedUsers));
-    }
+    refreshActiveUsers();
     setShowConfirm(false);
   };
   
@@ -85,7 +98,7 @@ export function ActiveUsersList() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4 scrollbar-visible">
+          <div className="space-y-4 scrollbar-visible max-h-[500px] overflow-auto">
             {activeUsers.length === 0 ? (
               <p className="text-muted-foreground">No active users found</p>
             ) : (

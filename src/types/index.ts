@@ -1,3 +1,4 @@
+
 export interface InventoryItem {
   id: string;
   name: string;
@@ -89,7 +90,7 @@ export type StockTransaction = {
   notes?: string;
   date: Date;
   expiryDate?: Date;
-  currentValue?: number;
+  currentValue?: number; // Added for value tracking
 };
 
 export interface User {

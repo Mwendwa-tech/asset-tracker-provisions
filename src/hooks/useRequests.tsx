@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import { RequestItem, Receipt, Permission, InventoryItem } from '@/types';
 import { generateId } from '@/utils/formatters';
 import { toast } from '@/components/ui/use-toast';
 import { useInventory } from './useInventory';
 import { useAssets } from './useAssets';
 import { useAuth } from '@/context/AuthContext';
+import { companyInfo } from '@/config/systemConfig';
 
 // Mock data for requests with department added for hotel context
 const mockRequests: RequestItem[] = [
@@ -94,21 +96,70 @@ export function useRequests() {
   
   const [loading, setLoading] = useState(false);
   
-  const { items: inventoryItems, addTransaction, updateItem } = useInventory();
+  const { items: inventoryItems, addTransaction } = useInventory();
   const { assets, checkOutAsset } = useAssets();
   const { user, hasPermission } = useAuth();
 
+  // Use memoized callbacks for all operations to prevent unnecessary rerenders
+  const refreshData = useCallback(() => {
+    try {
+      const savedRequests = localStorage.getItem(STORAGE_KEYS.REQUESTS);
+      const savedReceipts = localStorage.getItem(STORAGE_KEYS.RECEIPTS);
+      
+      if (savedRequests) {
+        setRequests(JSON.parse(savedRequests));
+      }
+      
+      if (savedReceipts) {
+        setReceipts(JSON.parse(savedReceipts));
+      }
+    } catch (error) {
+      console.error("Error refreshing request data:", error);
+    }
+  }, []);
+
   // Save to localStorage whenever data changes
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(requests));
+    try {
+      localStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(requests));
+      // Notify other tabs or components about the change
+      localStorage.setItem('request-update-timestamp', Date.now().toString());
+    } catch (error) {
+      console.error("Error saving requests to localStorage:", error);
+    }
   }, [requests]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.RECEIPTS, JSON.stringify(receipts));
+    try {
+      localStorage.setItem(STORAGE_KEYS.RECEIPTS, JSON.stringify(receipts));
+      // Notify other tabs or components about the change
+      localStorage.setItem('receipt-update-timestamp', Date.now().toString());
+    } catch (error) {
+      console.error("Error saving receipts to localStorage:", error);
+    }
   }, [receipts]);
 
+  // Listen for changes from other components or tabs
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'request-update-timestamp' || event.key === 'receipt-update-timestamp') {
+        refreshData();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Set up auto-refresh interval
+    const intervalId = setInterval(refreshData, 5000);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(intervalId);
+    };
+  }, [refreshData]);
+
   // Create a new request with immediate UI update
-  const createRequest = (
+  const createRequest = useCallback((
     request: Omit<RequestItem, 'id' | 'requestDate' | 'status'>
   ) => {
     setLoading(true);
@@ -130,7 +181,16 @@ export function useRequests() {
       };
       
       // Update state immediately for UI responsiveness
-      setRequests(current => [newRequest, ...current]);
+      setRequests(current => {
+        const updatedRequests = [newRequest, ...current];
+        try {
+          // Immediately persist to localStorage to prevent data loss
+          localStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(updatedRequests));
+        } catch (error) {
+          console.error("Error saving requests to localStorage:", error);
+        }
+        return updatedRequests;
+      });
       
       // Send notification (mock)
       console.log(`Notification: New request created by ${newRequest.requestedBy} for ${newRequest.itemName}`);
@@ -152,10 +212,10 @@ export function useRequests() {
       setLoading(false);
       return null;
     }
-  };
+  }, [hasPermission, user?.department, Permission.CreateRequest]);
 
   // Approve a request with immediate UI update
-  const approveRequest = (id: string, approverName: string) => {
+  const approveRequest = useCallback((id: string, approverName: string) => {
     setLoading(true);
     
     try {
@@ -168,18 +228,26 @@ export function useRequests() {
       // Handle department-level approval first if user is department head
       if (request && request.status === 'pending' && hasPermission(Permission.ApproveRequestDepartment) && !hasPermission(Permission.ApproveRequestFinal)) {
         // Update state immediately with proper typing
-        const updatedRequests = requests.map(req => 
-          req.id === id 
-            ? { 
-                ...req, 
-                status: 'department-approved' as const, 
-                departmentApprovedBy: approverName,
-                departmentApprovalDate: new Date()
-              } 
-            : req
-        ) as RequestItem[];
-        
-        setRequests(updatedRequests);
+        setRequests(current => {
+          const updatedRequests = current.map(req => 
+            req.id === id 
+              ? { 
+                  ...req, 
+                  status: 'department-approved' as const, 
+                  departmentApprovedBy: approverName,
+                  departmentApprovalDate: new Date()
+                } 
+              : req
+          ) as RequestItem[];
+          
+          try {
+            localStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(updatedRequests));
+          } catch (error) {
+            console.error("Error saving requests to localStorage:", error);
+          }
+          
+          return updatedRequests;
+        });
         
         toast({
           title: 'Request approved by department',
@@ -189,18 +257,26 @@ export function useRequests() {
       // Handle final approval
       else if ((request && request.status === 'department-approved') || hasPermission(Permission.ApproveRequestFinal)) {
         // Update state immediately with proper typing
-        const updatedRequests = requests.map(req => 
-          req.id === id 
-            ? { 
-                ...req, 
-                status: 'approved' as const, 
-                approvedBy: approverName,
-                approvalDate: new Date()
-              } 
-            : req
-        ) as RequestItem[];
-        
-        setRequests(updatedRequests);
+        setRequests(current => {
+          const updatedRequests = current.map(req => 
+            req.id === id 
+              ? { 
+                  ...req, 
+                  status: 'approved' as const, 
+                  approvedBy: approverName,
+                  approvalDate: new Date()
+                } 
+              : req
+          ) as RequestItem[];
+          
+          try {
+            localStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(updatedRequests));
+          } catch (error) {
+            console.error("Error saving requests to localStorage:", error);
+          }
+          
+          return updatedRequests;
+        });
         
         toast({
           title: 'Request approved',
@@ -218,10 +294,10 @@ export function useRequests() {
       });
       setLoading(false);
     }
-  };
+  }, [requests, hasPermission, Permission.ApproveRequestFinal, Permission.ApproveRequestDepartment]);
 
   // Reject a request
-  const rejectRequest = (id: string, approverName: string, reason: string) => {
+  const rejectRequest = useCallback((id: string, approverName: string, reason: string) => {
     setLoading(true);
     
     try {
@@ -229,29 +305,34 @@ export function useRequests() {
         throw new Error("You don't have permission to reject requests");
       }
       
-      // Simulate API call
-      setTimeout(() => {
-        setRequests(current => 
-          current.map(req => 
-            req.id === id 
-              ? { 
-                  ...req, 
-                  status: 'rejected', 
-                  approvedBy: approverName,
-                  approvalDate: new Date(),
-                  notes: reason
-                } 
-              : req
-          )
+      setRequests(current => {
+        const updatedRequests = current.map(req => 
+          req.id === id 
+            ? { 
+                ...req, 
+                status: 'rejected', 
+                approvedBy: approverName,
+                approvalDate: new Date(),
+                notes: reason
+              } 
+            : req
         );
         
-        toast({
-          title: 'Request rejected',
-          description: 'The request has been rejected.',
-        });
+        try {
+          localStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(updatedRequests));
+        } catch (error) {
+          console.error("Error saving requests to localStorage:", error);
+        }
         
-        setLoading(false);
-      }, 500);
+        return updatedRequests;
+      });
+      
+      toast({
+        title: 'Request rejected',
+        description: 'The request has been rejected.',
+      });
+      
+      setLoading(false);
     } catch (error) {
       console.error('Error rejecting request:', error);
       toast({
@@ -261,10 +342,10 @@ export function useRequests() {
       });
       setLoading(false);
     }
-  };
+  }, [hasPermission, Permission.ApproveRequestFinal, Permission.ApproveRequestDepartment]);
 
   // Enhanced fulfill request with FIFO for expiry dates and immediate UI updates
-  const fulfillRequest = (id: string, fulfillerName: string, notes?: string) => {
+  const fulfillRequest = useCallback((id: string, fulfillerName: string, notes?: string) => {
     setLoading(true);
     
     try {
@@ -283,20 +364,54 @@ export function useRequests() {
         throw new Error('Request must be approved before fulfillment');
       }
       
-      // Update the item/asset based on request type
-      if (requestToFulfill.itemType === 'inventory') {
+      // Update request status immediately with proper typing
+      const updatedRequests = requests.map(req => 
+        req.id === id 
+          ? { 
+              ...req, 
+              status: 'fulfilled' as const, 
+              fulfilledBy: fulfillerName,
+              fulfillmentDate: new Date(),
+              notes: notes ? `${req.notes || ''} | Fulfillment note: ${notes}` : req.notes
+            } 
+          : req
+      ) as RequestItem[];
+      
+      // Generate receipt
+      const requestToReceipt = updatedRequests.find(req => req.id === id);
+      
+      if (!requestToReceipt) {
+        throw new Error('Request not found after update');
+      }
+      
+      // Generate a year-based reference number
+      const yearPrefix = new Date().getFullYear().toString();
+      const receiptId = generateId();
+      
+      const newReceipt: Receipt = {
+        id: receiptId,
+        requestId: id,
+        receiptNumber: `${companyInfo.name.substring(0,2).toUpperCase()}-${yearPrefix}-${receiptId.slice(0, 6).toUpperCase()}`,
+        items: [
+          {
+            name: requestToReceipt.itemName,
+            quantity: requestToReceipt.quantity,
+            type: requestToReceipt.itemType
+          }
+        ],
+        requestedBy: requestToReceipt.requestedBy,
+        approvedBy: requestToReceipt.approvedBy || 'Unknown',
+        issuedBy: fulfillerName,
+        issueDate: new Date(),
+        notes: notes,
+        department: requestToReceipt.department
+      };
+      
+      // Update the item/asset based on request type - do this after creating the receipt
+      if (requestToFulfill.itemType === 'inventory' && requestToFulfill.quantity) {
         const item = inventoryItems.find(i => i.id === requestToFulfill.itemId) as InventoryItem;
         
-        if (item && requestToFulfill.quantity) {
-          // Handle items with expiry dates - FIFO logic
-          // If the item has an expiryDate property, we need to deduct from oldest stock first
-          // This is a simplified version - in a real system, each batch would be tracked separately
-          if (item.expiryDate) {
-            // For demonstration purposes, we'll just update the expiryDate if needed
-            // In a real system, we'd have a more complex stock rotation mechanism
-            console.log(`Using inventory with expiry date: ${item.expiryDate}`);
-          }
-          
+        if (item) {
           // Add transaction to inventory
           addTransaction({
             itemId: item.id,
@@ -321,53 +436,19 @@ export function useRequests() {
         }
       }
       
-      // Update request status immediately with proper typing
-      const updatedRequests = requests.map(req => 
-        req.id === id 
-          ? { 
-              ...req, 
-              status: 'fulfilled' as const, 
-              fulfilledBy: fulfillerName,
-              fulfillmentDate: new Date(),
-              notes: notes ? `${req.notes || ''} | Fulfillment note: ${notes}` : req.notes
-            } 
-          : req
-      ) as RequestItem[];
-      
+      // Update state with new data
       setRequests(updatedRequests);
-      
-      // Generate receipt
-      const requestToReceipt = updatedRequests.find(req => req.id === id);
-      
-      if (!requestToReceipt) {
-        throw new Error('Request not found after update');
-      }
-      
-      // Generate a year-based reference number
-      const yearPrefix = new Date().getFullYear().toString();
-      const receiptId = generateId();
-      
-      const newReceipt: Receipt = {
-        id: receiptId,
-        requestId: id,
-        receiptNumber: `LG-${yearPrefix}-${receiptId.slice(0, 6).toUpperCase()}`,
-        items: [
-          {
-            name: requestToReceipt.itemName,
-            quantity: requestToReceipt.quantity,
-            type: requestToReceipt.itemType
-          }
-        ],
-        requestedBy: requestToReceipt.requestedBy,
-        approvedBy: requestToReceipt.approvedBy || 'Unknown',
-        issuedBy: fulfillerName,
-        issueDate: new Date(),
-        notes: notes,
-        department: requestToReceipt.department
-      };
-      
-      // Update receipts state immediately
-      setReceipts(current => [newReceipt, ...current]);
+      setReceipts(current => {
+        const updatedReceipts = [newReceipt, ...current];
+        
+        try {
+          localStorage.setItem(STORAGE_KEYS.RECEIPTS, JSON.stringify(updatedReceipts));
+        } catch (error) {
+          console.error("Error saving receipts to localStorage:", error);
+        }
+        
+        return updatedReceipts;
+      });
       
       toast({
         title: 'Request fulfilled',
@@ -386,15 +467,15 @@ export function useRequests() {
       setLoading(false);
       return null;
     }
-  };
+  }, [requests, hasPermission, inventoryItems, assets, addTransaction, checkOutAsset, Permission.FulfillRequest]);
 
-  // Generate PDF receipt with improved formatting
-  const generateReceipt = (receiptId: string): string => {
+  // Generate PDF receipt with improved formatting and proper hotel name
+  const generateReceipt = useCallback((receiptId: string): string => {
     const receipt = receipts.find(r => r.id === receiptId);
     if (!receipt) return '';
     
     // Generate a reference number
-    const referenceNumber = receipt.receiptNumber || `LG-${new Date(receipt.issueDate).getFullYear()}-${receipt.id.slice(0, 8).toUpperCase()}`;
+    const referenceNumber = receipt.receiptNumber || `${companyInfo.name.substring(0,2).toUpperCase()}-${new Date(receipt.issueDate).getFullYear()}-${receipt.id.slice(0, 8).toUpperCase()}`;
     
     // In a real app, this would generate a PDF
     // For this mock, we'll create a data URL with a simple HTML structure
@@ -420,9 +501,9 @@ export function useRequests() {
         </head>
         <body>
           <div class="header">
-            <div class="logo">LUKENYA GETAWAY</div>
-            <div class="hotel-name">Five Star Elegance</div>
-            <p>123 Luxury Avenue, Prestige City</p>
+            <div class="logo">${companyInfo.name.toUpperCase()}</div>
+            <div class="hotel-name">${companyInfo.slogan}</div>
+            <p>${companyInfo.address}, ${companyInfo.city}</p>
             <h1>Inventory Issue Receipt</h1>
             <p>Receipt #: ${receipt.id}</p>
             <p>Date: ${new Date(receipt.issueDate).toLocaleDateString()}</p>
@@ -473,8 +554,8 @@ export function useRequests() {
           </div>
           
           <div class="footer">
-            <p>This is an official receipt of Lukenya Getaway.</p>
-            <p>For any inquiries, please contact the Inventory Department at inventory@lukenyagetaway.com</p>
+            <p>This is an official receipt of ${companyInfo.name}.</p>
+            <p>For any inquiries, please contact the Inventory Department at ${companyInfo.email}</p>
             <p><strong>Reference: ${referenceNumber}</strong></p>
           </div>
         </body>
@@ -484,7 +565,16 @@ export function useRequests() {
     // Convert HTML to data URL
     const dataURL = `data:text/html;charset=utf-8,${encodeURIComponent(receiptHTML)}`;
     return dataURL;
-  };
+  }, [receipts]);
+
+  // Manual refresh function for components to call
+  const refreshRequests = useCallback(() => {
+    refreshData();
+    toast({
+      title: "Data Refreshed",
+      description: "The requests data has been refreshed",
+    });
+  }, [refreshData]);
 
   return {
     requests,
@@ -494,6 +584,7 @@ export function useRequests() {
     approveRequest,
     rejectRequest,
     fulfillRequest,
-    generateReceipt
+    generateReceipt,
+    refreshRequests
   };
 }
