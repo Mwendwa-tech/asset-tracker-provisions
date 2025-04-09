@@ -17,8 +17,8 @@ const Procurement = () => {
   // Fixed the role comparison logic to work with the existing User type
   const isProcurementOfficer = user?.role === 'generalManager' || 
                                user?.role === 'departmentHead' ||
-                               user?.role === 'foodAndBeverageManager';  // Using roles from the User type
-
+                               user?.role === 'fbManager';  // Using fbManager which exists in the User type
+  
   return (
     <MainLayout>
       <div className="animate-fade-in">
