@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -371,11 +370,11 @@ export function LocalPurchaseOrder() {
                        user?.role === 'departmentHead' || 
                        user?.role === 'fbManager';
   
-  // Table columns for purchase orders
+  // Table columns for purchase orders - Fixed type compatibility
   const columns = [
     {
       header: "Order #",
-      accessorKey: "orderNumber",
+      accessorKey: "orderNumber" as const,
       cell: (info: any) => <a href="#" onClick={(e) => {
         e.preventDefault();
         const po = purchaseOrders.find(p => p.orderNumber === info.getValue());
@@ -385,20 +384,20 @@ export function LocalPurchaseOrder() {
     },
     {
       header: "Supplier",
-      accessorKey: "supplier",
+      accessorKey: "supplier" as const,
     },
     {
       header: "Type",
-      accessorKey: "type",
+      accessorKey: "type" as const,
     },
     {
       header: "Created",
-      accessorKey: "createdAt",
+      accessorKey: "createdAt" as const,
       cell: (info: any) => new Date(info.getValue()).toLocaleDateString(),
     },
     {
       header: "Status",
-      accessorKey: "status",
+      accessorKey: "status" as const,
       cell: (info: any) => (
         <Badge className={getStatusColor(info.getValue())}>
           {info.getValue()}
@@ -407,11 +406,12 @@ export function LocalPurchaseOrder() {
     },
     {
       header: "Total",
-      accessorKey: "total",
+      accessorKey: "total" as const,
       cell: (info: any) => `${companyInfo.currencySymbol}${info.getValue().toFixed(2)}`,
     },
     {
       header: "Actions",
+      accessorKey: "actions" as const,
       cell: (info: any) => {
         const po = info.row.original;
         return (

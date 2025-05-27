@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { RequestItem, Receipt, Permission, InventoryItem } from '@/types';
 import { generateId } from '@/utils/formatters';
@@ -214,7 +213,7 @@ export function useRequests() {
     }
   }, [hasPermission, user?.department, Permission.CreateRequest]);
 
-  // Approve a request with immediate UI update
+  // Approve a request with immediate UI update - Fixed type casting
   const approveRequest = useCallback((id: string, approverName: string) => {
     setLoading(true);
     
@@ -238,7 +237,7 @@ export function useRequests() {
                   departmentApprovalDate: new Date()
                 } 
               : req
-          ) as RequestItem[];
+          );
           
           try {
             localStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(updatedRequests));
@@ -267,7 +266,7 @@ export function useRequests() {
                   approvalDate: new Date()
                 } 
               : req
-          ) as RequestItem[];
+          );
           
           try {
             localStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(updatedRequests));
@@ -296,7 +295,7 @@ export function useRequests() {
     }
   }, [requests, hasPermission, Permission.ApproveRequestFinal, Permission.ApproveRequestDepartment]);
 
-  // Reject a request
+  // Reject a request - Fixed type casting
   const rejectRequest = useCallback((id: string, approverName: string, reason: string) => {
     setLoading(true);
     
@@ -310,7 +309,7 @@ export function useRequests() {
           req.id === id 
             ? { 
                 ...req, 
-                status: 'rejected', 
+                status: 'rejected' as const, 
                 approvedBy: approverName,
                 approvalDate: new Date(),
                 notes: reason
@@ -344,7 +343,7 @@ export function useRequests() {
     }
   }, [hasPermission, Permission.ApproveRequestFinal, Permission.ApproveRequestDepartment]);
 
-  // Enhanced fulfill request with FIFO for expiry dates and immediate UI updates
+  // Enhanced fulfill request with FIFO for expiry dates and immediate UI updates - Fixed type casting
   const fulfillRequest = useCallback((id: string, fulfillerName: string, notes?: string) => {
     setLoading(true);
     
@@ -375,7 +374,7 @@ export function useRequests() {
               notes: notes ? `${req.notes || ''} | Fulfillment note: ${notes}` : req.notes
             } 
           : req
-      ) as RequestItem[];
+      );
       
       // Generate receipt
       const requestToReceipt = updatedRequests.find(req => req.id === id);
