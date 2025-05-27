@@ -5,22 +5,22 @@
 
 // Company/Hotel information - SINGLE SOURCE OF TRUTH
 export const companyInfo = {
-  name: "Grand Paradise Hotel",
-  address: "123 Ocean Drive",
-  city: "Paradise Bay",
-  state: "Tropical State",
-  zipCode: "12345",
-  country: "Island Nation",
-  phone: "+1 (555) 123-4567",
-  email: "info@grandparadisehotel.com",
-  website: "www.grandparadisehotel.com",
-  taxId: "12-3456789",
+  name: "Lukenya Getaway",
+  address: "Lukenya Hills",
+  city: "Machakos",
+  state: "Machakos County", 
+  zipCode: "90100",
+  country: "Kenya",
+  phone: "+254 722 000 000",
+  email: "info@lukenyagetaway.com",
+  website: "www.lukenyagetaway.com",
+  taxId: "P051234567L",
   logo: "/logo.png", // Path to logo file
-  currency: "USD",
-  currencySymbol: "$",
-  timezone: "UTC-5",
-  yearEstablished: "2010",
-  slogan: "Your Paradise Awaits"
+  currency: "KES",
+  currencySymbol: "KSh",
+  timezone: "UTC+3",
+  yearEstablished: "2015",
+  slogan: "Nature's Paradise Awaits You"
 };
 
 // System settings

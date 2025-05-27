@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { companyInfo } from '@/config/systemConfig';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -84,7 +85,7 @@ export function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
       <div className="flex h-14 items-center justify-between border-b px-3 py-4">
         {!collapsed && (
           <Link to="/" className="flex items-center">
-            <h1 className="text-lg font-semibold tracking-tight">Lukenya Getaway</h1>
+            <h1 className="text-lg font-semibold tracking-tight">{companyInfo.name}</h1>
           </Link>
         )}
         <Button

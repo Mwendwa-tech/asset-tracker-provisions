@@ -14,6 +14,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/components/theme-provider';
 import { NotificationCenter } from '@/components/ui/NotificationCenter';
 import { Link } from 'react-router-dom';
+import { companyInfo } from '@/config/systemConfig';
 
 interface NavbarProps {
   setSidebarOpen: (open: boolean) => void;
@@ -34,7 +35,7 @@ export const Navbar = ({ setSidebarOpen }: NavbarProps) => {
         </div>
         <div className="flex flex-1 items-center justify-between">
           <Link to="/" className="flex items-center text-xl font-bold">
-            Lukenya Getaway
+            {companyInfo.name}
           </Link>
           <div className="flex items-center gap-2">
             {/* Notification Center */}
