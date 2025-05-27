@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from 'react-router-dom';
 import { 
   BarChart3, 
@@ -16,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { companyInfo } from '@/config/systemConfig';
+import { companyInfo } from '@/config/organizationConfig';
 
 interface SidebarProps {
   collapsed: boolean;

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Bell, Menu, Moon, Sun, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/components/theme-provider';
 import { NotificationCenter } from '@/components/ui/NotificationCenter';
 import { Link } from 'react-router-dom';
-import { companyInfo } from '@/config/systemConfig';
+import { companyInfo } from '@/config/organizationConfig';
 
 interface NavbarProps {
   setSidebarOpen: (open: boolean) => void;
