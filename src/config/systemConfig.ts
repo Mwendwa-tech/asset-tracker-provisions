@@ -1,27 +1,26 @@
-
 /**
  * System Configuration
  * Central place for configurable system settings
  */
 
-// Company/Hotel information
+// Company/Hotel information - SINGLE SOURCE OF TRUTH
 export const companyInfo = {
-  name: "Luxury Hotel & Resorts",
-  address: "123 Beachfront Avenue",
+  name: "Grand Paradise Hotel",
+  address: "123 Ocean Drive",
   city: "Paradise Bay",
   state: "Tropical State",
   zipCode: "12345",
   country: "Island Nation",
   phone: "+1 (555) 123-4567",
-  email: "info@luxuryhotel.example",
-  website: "www.luxuryhotel.example",
+  email: "info@grandparadisehotel.com",
+  website: "www.grandparadisehotel.com",
   taxId: "12-3456789",
   logo: "/logo.png", // Path to logo file
   currency: "USD",
   currencySymbol: "$",
   timezone: "UTC-5",
   yearEstablished: "2010",
-  slogan: "Redefining Luxury, One Stay at a Time"
+  slogan: "Your Paradise Awaits"
 };
 
 // System settings

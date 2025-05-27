@@ -3,13 +3,25 @@ import React, { useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ChevronLeft, ChevronRight, Search, RefreshCw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, RefreshCw, MoreHorizontal } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Column {
   header: string;
   accessorKey: string | number | symbol;
   cell?: (item: any) => React.ReactNode;
   sortable?: boolean;
+}
+
+interface RowAction {
+  label: string;
+  onClick: (item: any) => void;
+  icon?: React.ReactNode;
 }
 
 interface DataTableProps {
@@ -20,6 +32,8 @@ interface DataTableProps {
   pageSize?: number;
   onRefresh?: () => void;
   title?: string;
+  onRowClick?: (item: any) => void;
+  rowActions?: RowAction[] | ((item: any) => RowAction[]);
 }
 
 export function DataTable({ 
@@ -29,7 +43,9 @@ export function DataTable({
   searchKeys = [], 
   pageSize = 10,
   onRefresh,
-  title
+  title,
+  onRowClick,
+  rowActions
 }: DataTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
@@ -108,6 +124,27 @@ export function DataTable({
     setSortConfig(null);
   };
 
+  const handleRowClick = (item: any, event: React.MouseEvent) => {
+    // Don't trigger row click if clicking on dropdown menu
+    if ((event.target as Element).closest('[data-dropdown-trigger]')) {
+      return;
+    }
+    
+    if (onRowClick) {
+      onRowClick(item);
+    }
+  };
+
+  const getRowActions = (item: any): RowAction[] => {
+    if (!rowActions) return [];
+    
+    if (typeof rowActions === 'function') {
+      return rowActions(item);
+    }
+    
+    return rowActions;
+  };
+
   return (
     <div className="space-y-4">
       {(searchable || onRefresh || title) && (
@@ -155,25 +192,58 @@ export function DataTable({
                   </div>
                 </TableHead>
               ))}
+              {rowActions && (
+                <TableHead className="w-10">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
+              )}
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedData.length > 0 ? (
               paginatedData.map((item, rowIndex) => (
-                <TableRow key={item.id || rowIndex}>
+                <TableRow 
+                  key={item.id || rowIndex}
+                  className={onRowClick ? "cursor-pointer" : ""}
+                  onClick={(event) => handleRowClick(item, event)}
+                >
                   {columns.map((column, colIndex) => (
                     <TableCell key={colIndex}>
                       {column.cell 
-                        ? column.cell({ getValue: () => item[column.accessorKey], row: { original: item } })
+                        ? column.cell(item)
                         : item[column.accessorKey] || '-'
                       }
                     </TableCell>
                   ))}
+                  {rowActions && (
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild data-dropdown-trigger>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {getRowActions(item).map((action, actionIndex) => (
+                            <DropdownMenuItem
+                              key={actionIndex}
+                              onClick={() => action.onClick(item)}
+                              className="cursor-pointer"
+                            >
+                              {action.icon && <span className="mr-2">{action.icon}</span>}
+                              {action.label}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={columns.length + (rowActions ? 1 : 0)} className="text-center py-8 text-muted-foreground">
                   {searchTerm ? 'No results found for your search.' : 'No data available.'}
                 </TableCell>
               </TableRow>
