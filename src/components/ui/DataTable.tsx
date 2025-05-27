@@ -1,266 +1,218 @@
 
-import { useState } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { 
-  ChevronDown, 
-  ChevronUp, 
-  ChevronsUpDown, 
-  Filter, 
-  MoreHorizontal,
-  Search, 
-  X
-} from "lucide-react";
+import React, { useState, useMemo } from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ChevronLeft, ChevronRight, Search, RefreshCw } from 'lucide-react';
 
-interface DataTableProps<T> {
-  data: T[];
-  columns: {
-    header: string;
-    accessorKey: keyof T;
-    cell?: (item: T) => React.ReactNode;
-    sortable?: boolean;
-  }[];
-  onRowClick?: (item: T) => void;
-  searchable?: boolean;
-  searchKeys?: (keyof T)[];
-  rowActions?: {
-    label: string;
-    onClick: (item: T) => void;
-    icon?: React.ReactNode;
-  }[] | ((item: T) => {
-    label: string;
-    onClick: (item: T) => void;
-    icon?: React.ReactNode;
-  }[]);
+interface Column {
+  header: string;
+  accessorKey: string | number | symbol;
+  cell?: (item: any) => React.ReactNode;
+  sortable?: boolean;
 }
 
-export function DataTable<T extends Record<string, any>>({
-  data,
-  columns,
-  onRowClick,
-  searchable = true,
-  searchKeys,
-  rowActions,
-}: DataTableProps<T>) {
-  const [sortBy, setSortBy] = useState<keyof T | null>(null);
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filteredData, setFilteredData] = useState<T[]>(data);
+interface DataTableProps {
+  data: any[];
+  columns: Column[];
+  searchable?: boolean;
+  searchKeys?: string[];
+  pageSize?: number;
+  onRefresh?: () => void;
+  title?: string;
+}
 
-  const handleSort = (column: keyof T) => {
-    if (sortBy === column) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(column);
-      setSortOrder('asc');
+export function DataTable({ 
+  data = [], 
+  columns, 
+  searchable = false, 
+  searchKeys = [], 
+  pageSize = 10,
+  onRefresh,
+  title
+}: DataTableProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Filter data based on search term
+  const filteredData = useMemo(() => {
+    if (!searchable || !searchTerm.trim()) {
+      return data;
     }
-  };
 
-  useState(() => {
-    if (!searchQuery) {
-      setFilteredData(data);
-      return;
-    }
-
-    const lowercaseQuery = searchQuery.toLowerCase();
-    const keys = searchKeys || Object.keys(data[0] || {}) as (keyof T)[];
-    
-    const filtered = data.filter(item => {
-      return keys.some(key => {
-        const value = item[key];
-        if (value === null || value === undefined) return false;
-        return String(value).toLowerCase().includes(lowercaseQuery);
-      });
-    });
-    
-    setFilteredData(filtered);
-  });
-
-  const getSortedData = () => {
-    if (!sortBy) return filteredData;
-    
-    return [...filteredData].sort((a, b) => {
-      const aValue = a[sortBy];
-      const bValue = b[sortBy];
+    const searchLower = searchTerm.toLowerCase();
+    return data.filter(item => {
+      if (searchKeys.length > 0) {
+        return searchKeys.some(key => {
+          const value = item[key];
+          return value && value.toString().toLowerCase().includes(searchLower);
+        });
+      }
       
+      // Search all string values if no specific keys provided
+      return Object.values(item).some(value => 
+        value && value.toString().toLowerCase().includes(searchLower)
+      );
+    });
+  }, [data, searchTerm, searchable, searchKeys]);
+
+  // Sort data
+  const sortedData = useMemo(() => {
+    if (!sortConfig) {
+      return filteredData;
+    }
+
+    return [...filteredData].sort((a, b) => {
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+
       if (aValue === bValue) return 0;
       
-      const comparison = aValue > bValue ? 1 : -1;
-      return sortOrder === 'asc' ? comparison : -comparison;
+      const comparison = aValue < bValue ? -1 : 1;
+      return sortConfig.direction === 'desc' ? -comparison : comparison;
+    });
+  }, [filteredData, sortConfig]);
+
+  // Paginate data
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return sortedData.slice(startIndex, startIndex + pageSize);
+  }, [sortedData, currentPage, pageSize]);
+
+  const totalPages = Math.ceil(sortedData.length / pageSize);
+
+  const handleSort = (key: string) => {
+    setSortConfig(current => {
+      if (current?.key === key) {
+        return current.direction === 'asc' 
+          ? { key, direction: 'desc' }
+          : null;
+      }
+      return { key, direction: 'asc' };
     });
   };
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-    
-    if (!query) {
-      setFilteredData(data);
-      return;
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1); // Reset to first page when searching
+  };
+
+  const handleRefresh = () => {
+    if (onRefresh) {
+      onRefresh();
     }
-    
-    const lowercaseQuery = query.toLowerCase();
-    const keys = searchKeys || Object.keys(data[0] || {}) as (keyof T)[];
-    
-    const filtered = data.filter(item => {
-      return keys.some(key => {
-        const value = item[key];
-        if (value === null || value === undefined) return false;
-        return String(value).toLowerCase().includes(lowercaseQuery);
-      });
-    });
-    
-    setFilteredData(filtered);
-  };
-
-  const clearSearch = () => {
-    setSearchQuery("");
-    setFilteredData(data);
-  };
-
-  const getSortIcon = (column: keyof T) => {
-    if (sortBy !== column) return <ChevronsUpDown className="ml-1 h-4 w-4" />;
-    return sortOrder === 'asc' ? (
-      <ChevronUp className="ml-1 h-4 w-4" />
-    ) : (
-      <ChevronDown className="ml-1 h-4 w-4" />
-    );
-  };
-
-  const getRowActions = (item: T) => {
-    if (!rowActions) return [];
-    
-    if (typeof rowActions === 'function') {
-      return rowActions(item);
-    }
-    
-    return rowActions;
+    // Reset search and pagination
+    setSearchTerm('');
+    setCurrentPage(1);
+    setSortConfig(null);
   };
 
   return (
-    <div className="space-y-2">
-      {searchable && (
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-          <Input
-            type="search"
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={handleSearch}
-            className="pl-10 pr-10"
-          />
-          {searchQuery && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-0 top-0 h-full"
-              onClick={clearSearch}
-            >
-              <X className="h-4 w-4" />
+    <div className="space-y-4">
+      {(searchable || onRefresh || title) && (
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            {title && <h3 className="text-lg font-semibold">{title}</h3>}
+            {searchable && (
+              <div className="relative max-w-sm">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            )}
+          </div>
+          {onRefresh && (
+            <Button variant="outline" size="sm" onClick={handleRefresh}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
             </Button>
           )}
         </div>
       )}
-      
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
               {columns.map((column, index) => (
-                <TableHead key={index}>
-                  {column.sortable ? (
-                    <button
-                      className="flex items-center text-left"
-                      onClick={() => handleSort(column.accessorKey)}
-                    >
-                      {column.header}
-                      {getSortIcon(column.accessorKey)}
-                    </button>
-                  ) : (
-                    column.header
-                  )}
+                <TableHead
+                  key={index}
+                  className={column.sortable ? "cursor-pointer hover:bg-muted/50" : ""}
+                  onClick={() => column.sortable && handleSort(column.accessorKey.toString())}
+                >
+                  <div className="flex items-center gap-2">
+                    {column.header}
+                    {column.sortable && sortConfig?.key === column.accessorKey.toString() && (
+                      <span className="text-xs">
+                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                      </span>
+                    )}
+                  </div>
                 </TableHead>
               ))}
-              {rowActions && <TableHead className="w-[80px]">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {getSortedData().map((item, rowIndex) => (
-              <TableRow
-                key={rowIndex}
-                className={onRowClick ? "cursor-pointer hover:bg-gray-50" : ""}
-                onClick={onRowClick ? () => onRowClick(item) : undefined}
-              >
-                {columns.map((column, colIndex) => (
-                  <TableCell key={colIndex}>
-                    {column.cell ? column.cell(item) : String(item[column.accessorKey] || '')}
-                  </TableCell>
-                ))}
-                {rowActions && (
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {getRowActions(item).map((action, actionIndex) => (
-                          <DropdownMenuItem
-                            key={actionIndex}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              action.onClick(item);
-                            }}
-                          >
-                            {action.icon && (
-                              <span className="mr-2">{action.icon}</span>
-                            )}
-                            {action.label}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                )}
-              </TableRow>
-            ))}
-            {getSortedData().length === 0 && (
+            {paginatedData.length > 0 ? (
+              paginatedData.map((item, rowIndex) => (
+                <TableRow key={item.id || rowIndex}>
+                  {columns.map((column, colIndex) => (
+                    <TableCell key={colIndex}>
+                      {column.cell 
+                        ? column.cell({ getValue: () => item[column.accessorKey], row: { original: item } })
+                        : item[column.accessorKey] || '-'
+                      }
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length + (rowActions ? 1 : 0)}
-                  className="h-24 text-center"
-                >
-                  No results found.
+                <TableCell colSpan={columns.length} className="text-center py-8 text-muted-foreground">
+                  {searchTerm ? 'No results found for your search.' : 'No data available.'}
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
-      <div className="flex justify-between text-sm text-muted-foreground">
-        <div>
-          Showing {getSortedData().length} of {data.length} items
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Showing {paginatedData.length} of {sortedData.length} items
+            {searchTerm && ` (filtered from ${data.length} total)`}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </Button>
+            <span className="text-sm font-medium">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
